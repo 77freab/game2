@@ -4,6 +4,7 @@
 #include <functional>
 #include <osg/Geometry>
 #include <osg/Geode>
+#include <QDeadlineTimer> 
 
 enum class direction
 {
@@ -67,6 +68,7 @@ private:
   osg::ref_ptr<tile> _ur;
   osg::Vec2i _collisionPt1;
   osg::Vec2i _collisionPt2;
+  QDeadlineTimer* _timer;
   const int _x0;
   const int _z0;
   direction _goDir = direction::UP;

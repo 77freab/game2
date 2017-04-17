@@ -35,11 +35,6 @@ class ViewerWidget : public QWidget, public osgGA::GUIEventHandler
 public:
   ViewerWidget(QWidget* parent = 0, Qt::WindowFlags f = 0, osgViewer::ViewerBase::ThreadingModel threadingModel = osgViewer::Viewer::SingleThreaded) : QWidget(parent, f), _viewer(new osgViewer::Viewer)
   {
-    _viewer->setThreadingModel(threadingModel);
-    _viewer->setKeyEventSetsDone(0);
-    _scene = createScene();
-    _widget = addViewWidget(createGraphicsWindow(0, 0, 800, 700), _scene->asNode());
-
     QFont font;
     font.setPointSize(20);
 
@@ -57,6 +52,14 @@ public:
 
     connect(_btn, &QPushButton::clicked, this, &ViewerWidget::restart);
 
+    if (testSDLJoystick())
+    {
+      _viewer->setThreadingModel(threadingModel);
+      _viewer->setKeyEventSetsDone(0);
+      _scene = createScene();
+      _widget = addViewWidget(createGraphicsWindow(0, 0, 800, 700), _scene->asNode());
+    }
+
     _hLayout = new QHBoxLayout;
     _vLayout = new QVBoxLayout;
     _hLayout->addWidget(_widget);
@@ -64,8 +67,6 @@ public:
     _vLayout->addWidget(_btn);
     _vLayout->addWidget(_console);
     setLayout(_hLayout);
-
-    testSDLJoystick();
 
     connect(&_timer, SIGNAL(timeout()), this, SLOT(update()));
     _timer.start(10);
@@ -138,7 +139,7 @@ public:
 
     _viewer->setSceneData(scene);
     //_viewer->addEventHandler(new osgViewer::StatsHandler);
-    _viewer->addEventHandler(this);
+    //_viewer->addEventHandler(this);
     //_viewer->setCameraManipulator(new osgGA::TrackballManipulator);
     gw->setTouchEventsEnabled(true);
     return gw->getGLWidget();
@@ -163,128 +164,128 @@ public:
     return new osgQt::GraphicsWindowQt(traits.get());
   }
 
-  bool handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter&)
-  {
-    switch (ea.getEventType())
-    {
-    case(osgGA::GUIEventAdapter::KEYDOWN) :
-    {
-      switch (ea.getKey())
-      {
-      case(119) : // W
-      {
-        _pressedKeysP1[119] = true;
-        _p1Tank->moveTo(direction::UP);
-        break;
-      }
-      case(115) : // S
-      {
-        _pressedKeysP1[115] = true;
-        _p1Tank->moveTo(direction::DOWN);
-        break;
-      }
-      case(97) : // A
-      {
-        _pressedKeysP1[97] = true;
-        _p1Tank->moveTo(direction::LEFT);
-        break;
-      }
-      case(100) : // D
-      {
-        _pressedKeysP1[100] = true;
-        _p1Tank->moveTo(direction::RIGHT);
-        break;
-      }
-      case(32) : // SPACE
-      {
-        _p1Tank->shoot();
-        break;
-      }
-                 ////////////////////////////////////////////////////////////
-      case(osgGA::GUIEventAdapter::KEY_Up) : // up
-      {
-        _pressedKeysP2[65362] = true;
-        _p2Tank->moveTo(direction::UP);
-        break;
-      }
-      case(osgGA::GUIEventAdapter::KEY_Down) : // down
-      {
-        _pressedKeysP2[65364] = true;
-        _p2Tank->moveTo(direction::DOWN);
-        break;
-      }
-      case(osgGA::GUIEventAdapter::KEY_Left) : // left
-      {
-        _pressedKeysP2[65361] = true;
-        _p2Tank->moveTo(direction::LEFT);
-        break;
-      }
-      case(osgGA::GUIEventAdapter::KEY_Right) : // right
-      {
-        _pressedKeysP2[65363] = true;
-        _p2Tank->moveTo(direction::RIGHT);
-        break;
-      }
-      case(osgGA::GUIEventAdapter::KEY_KP_Insert) : // num0
-      {
-        _p2Tank->shoot();
-        break;
-      }
-      }
-      return true;
-    }
-    case(osgGA::GUIEventAdapter::KEYUP) :
-    {
-      int key = ea.getKey();
-      switch (key)
-      {
-      case(119) : // W
-      case(115) : // S
-      case(97) : // A
-      case(100) : // D
-      {
-        _pressedKeysP1[key] = false;
-        // если это была единственна€ нажата€ клавиша то танк останавливаетс€
-        if (_pressedKeysP1[119])
-          _p1Tank->moveTo(direction::UP);
-        else if (_pressedKeysP1[115])
-          _p1Tank->moveTo(direction::DOWN);
-        else if (_pressedKeysP1[97])
-          _p1Tank->moveTo(direction::LEFT);
-        else if (_pressedKeysP1[100])
-          _p1Tank->moveTo(direction::RIGHT);
-        else
-          _p1Tank->stop();
-        break;
-      }
-      case(65362) : // up
-      case(65364) : // down
-      case(65361) : // left
-      case(65363) : // right
-      {
-        _pressedKeysP2[key] = false;
-        // если это была единственна€ нажата€ клавиша то танк останавливаетс€
-        if (_pressedKeysP2[65362])
-          _p2Tank->moveTo(direction::UP);
-        else if (_pressedKeysP2[65364])
-          _p2Tank->moveTo(direction::DOWN);
-        else if (_pressedKeysP2[65361])
-          _p2Tank->moveTo(direction::LEFT);
-        else if (_pressedKeysP2[65363])
-          _p2Tank->moveTo(direction::RIGHT);
-        else
-          _p2Tank->stop();
-        break;
-      }
-      }
-      return true;
-    }
-    default:
-      return false;
-    }
-  }
+  //bool handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter&)
+  //{
+  //  switch (ea.getEventType())
+  //  {
+  //  case(osgGA::GUIEventAdapter::KEYDOWN) :
+  //  {
+  //    switch (ea.getKey())
+  //    {
+  //    case(119) : // W
+  //    {
+  //      _pressedKeysP1[119] = true;
+  //      _p1Tank->moveTo(direction::UP);
+  //      break;
+  //    }
+  //    case(115) : // S
+  //    {
+  //      _pressedKeysP1[115] = true;
+  //      _p1Tank->moveTo(direction::DOWN);
+  //      break;
+  //    }
+  //    case(97) : // A
+  //    {
+  //      _pressedKeysP1[97] = true;
+  //      _p1Tank->moveTo(direction::LEFT);
+  //      break;
+  //    }
+  //    case(100) : // D
+  //    {
+  //      _pressedKeysP1[100] = true;
+  //      _p1Tank->moveTo(direction::RIGHT);
+  //      break;
+  //    }
+  //    case(32) : // SPACE
+  //    {
+  //      _p1Tank->shoot();
+  //      break;
+  //    }
+  //               ////////////////////////////////////////////////////////////
+  //    case(osgGA::GUIEventAdapter::KEY_Up) : // up
+  //    {
+  //      _pressedKeysP2[65362] = true;
+  //      _p2Tank->moveTo(direction::UP);
+  //      break;
+  //    }
+  //    case(osgGA::GUIEventAdapter::KEY_Down) : // down
+  //    {
+  //      _pressedKeysP2[65364] = true;
+  //      _p2Tank->moveTo(direction::DOWN);
+  //      break;
+  //    }
+  //    case(osgGA::GUIEventAdapter::KEY_Left) : // left
+  //    {
+  //      _pressedKeysP2[65361] = true;
+  //      _p2Tank->moveTo(direction::LEFT);
+  //      break;
+  //    }
+  //    case(osgGA::GUIEventAdapter::KEY_Right) : // right
+  //    {
+  //      _pressedKeysP2[65363] = true;
+  //      _p2Tank->moveTo(direction::RIGHT);
+  //      break;
+  //    }
+  //    case(osgGA::GUIEventAdapter::KEY_KP_Insert) : // num0
+  //    {
+  //      _p2Tank->shoot();
+  //      break;
+  //    }
+  //    }
+  //    return true;
+  //  }
+  //  case(osgGA::GUIEventAdapter::KEYUP) :
+  //  {
+  //    int key = ea.getKey();
+  //    switch (key)
+  //    {
+  //    case(119) : // W
+  //    case(115) : // S
+  //    case(97) : // A
+  //    case(100) : // D
+  //    {
+  //      _pressedKeysP1[key] = false;
+  //      // если это была единственна€ нажата€ клавиша то танк останавливаетс€
+  //      if (_pressedKeysP1[119])
+  //        _p1Tank->moveTo(direction::UP);
+  //      else if (_pressedKeysP1[115])
+  //        _p1Tank->moveTo(direction::DOWN);
+  //      else if (_pressedKeysP1[97])
+  //        _p1Tank->moveTo(direction::LEFT);
+  //      else if (_pressedKeysP1[100])
+  //        _p1Tank->moveTo(direction::RIGHT);
+  //      else
+  //        _p1Tank->stop();
+  //      break;
+  //    }
+  //    case(65362) : // up
+  //    case(65364) : // down
+  //    case(65361) : // left
+  //    case(65363) : // right
+  //    {
+  //      _pressedKeysP2[key] = false;
+  //      // если это была единственна€ нажата€ клавиша то танк останавливаетс€
+  //      if (_pressedKeysP2[65362])
+  //        _p2Tank->moveTo(direction::UP);
+  //      else if (_pressedKeysP2[65364])
+  //        _p2Tank->moveTo(direction::DOWN);
+  //      else if (_pressedKeysP2[65361])
+  //        _p2Tank->moveTo(direction::LEFT);
+  //      else if (_pressedKeysP2[65363])
+  //        _p2Tank->moveTo(direction::RIGHT);
+  //      else
+  //        _p2Tank->stop();
+  //      break;
+  //    }
+  //    }
+  //    return true;
+  //  }
+  //  default:
+  //    return false;
+  //  }
+  //}
 
-  void testSDLJoystick()
+  bool testSDLJoystick()
   {
     // Initialize the joystick subsystem
     SDL_InitSubSystem(SDL_INIT_JOYSTICK);
@@ -292,58 +293,90 @@ public:
     // Check for joystick
     if (SDL_NumJoysticks() > 0)
     {
-      _console->insertPlainText("Ќайдено " + QString::number(SDL_NumJoysticks()) + " джойстиков\n");
+      _console->insertPlainText(QString::fromLocal8Bit("Ќайдено ") + QString::number(SDL_NumJoysticks()) + QString::fromLocal8Bit(" джойстиков\n"));
       // Open joystick
-      joy1 = SDL_JoystickOpen(0);
-      //joy2 = SDL_JoystickOpen(1);
+      _joy1 = SDL_JoystickOpen(0);
+      _joy2 = SDL_JoystickOpen(1);
 
-      if (joy1)
+      if (_joy1)
       {
-        _console->insertPlainText("Ќадо же, и оба работают вроде бы даже\n");
-
-        _console->insertPlainText( "Opened Joystick 0\nName: " + QString(SDL_JoystickName(0)) +
-          "\nNumber of Axes: " + QString::number(SDL_JoystickNumAxes(joy1)) +
-          "\nNumber of Buttons: " + QString::number(SDL_JoystickNumButtons(joy1)) + 
-          "\nNumber of Balls: " + QString::number(SDL_JoystickNumBalls(joy1)) + "\n");
-
-        QTest::qSleep(10000);
-        double axis[5];
-        bool button[10];
-        for (;;)
-        {
-          SDL_JoystickUpdate();
-          _console->insertPlainText("Joystick ");
-          for (int i = 0; i < 5; i++)
-          {
-            axis[i] = SDL_JoystickGetAxis(joy1, i) / 32768.0;
-            _console->insertPlainText("a_" + QString::number(i) + " = " + QString::number(axis[i]));
-          }
-          for (int i = 0; i < 10; i++)
-          {
-            button[i] = SDL_JoystickGetButton(joy1, i);
-            _console->insertPlainText("b_" + QString::number(i) + " = " + QString::number(button[i]));
-          }
-          qDebug() << endl;
-          QTest::qSleep(1000);
-        }
-        SDL_JoystickClose(joy1);
+        _console->insertPlainText(
+          "Opened Joystick 0\nName: " + QString(SDL_JoystickName(_joy1)) +
+          "\nNumber of Axes: " + QString::number(SDL_JoystickNumAxes(_joy1)) +
+          "\nNumber of Buttons: " + QString::number(SDL_JoystickNumButtons(_joy1)) +
+          "\nNumber of Balls: " + QString::number(SDL_JoystickNumBalls(_joy1)) + "\n\n"
+          );
       }
-      else
-        _console->insertPlainText("Couldn't open Joystick 0\n");
+      if (_joy2)
+      {
+        _console->insertPlainText(
+          "Opened Joystick 0\nName: " + QString(SDL_JoystickName(_joy2)) +
+          "\nNumber of Axes: " + QString::number(SDL_JoystickNumAxes(_joy2)) +
+          "\nNumber of Buttons: " + QString::number(SDL_JoystickNumButtons(_joy2)) +
+          "\nNumber of Balls: " + QString::number(SDL_JoystickNumBalls(_joy2)) + "\n\n"
+          );
+      }
+      return true;
     }
     else
       _console->insertPlainText(QString::fromLocal8Bit("Ќе найден ни один джойстик\n"));
+    return false;
   }
 
   virtual void paintEvent(QPaintEvent* event)
   {
     _viewer->frame();
+
     while (!toDelete.empty())
     {
       toDelete.front()->getParent(0)->removeChild(toDelete.front());
       toDelete.pop_front();
     }
 
+    _p1Tank->stop();
+    _p2Tank->stop();
+
+    SDL_JoystickUpdate();
+
+    int hAxisP1, vAxisP1;
+    bool startBtnP1, fireBtnP1;
+
+    hAxisP1 = SDL_JoystickGetAxis(_joy1, 0);
+    vAxisP1 = SDL_JoystickGetAxis(_joy1, 1);
+    startBtnP1 = SDL_JoystickGetButton(_joy1, 9);
+    fireBtnP1 = SDL_JoystickGetButton(_joy1, 2);
+
+    if (vAxisP1 < -20000) // UP button
+      _p1Tank->moveTo(direction::LEFT);
+    if (vAxisP1 > 20000) // DOWN button
+      _p1Tank->moveTo(direction::RIGHT);
+    if (hAxisP1 < -20000) // LEFT button
+      _p1Tank->moveTo(direction::DOWN);
+    if (hAxisP1 > 20000) // RIGHT button
+      _p1Tank->moveTo(direction::UP);
+    if (fireBtnP1) // FIRE button
+      _p1Tank->shoot();
+
+    ////////////////////////////////////////////////////////////
+
+    int hAxisP2, vAxisP2;
+    bool startBtnP2, fireBtnP2;
+
+    hAxisP2 = SDL_JoystickGetAxis(_joy2, 0);
+    vAxisP2 = SDL_JoystickGetAxis(_joy2, 1);
+    startBtnP2 = SDL_JoystickGetButton(_joy2, 9);
+    fireBtnP2 = SDL_JoystickGetButton(_joy2, 2);
+
+    if (vAxisP2 < -20000) // UP button
+      _p2Tank->moveTo(direction::LEFT);
+    if (vAxisP2 > 20000) // DOWN button
+      _p2Tank->moveTo(direction::RIGHT);
+    if (hAxisP2 < -20000) // LEFT button
+      _p2Tank->moveTo(direction::DOWN);
+    if (hAxisP2 > 20000) // RIGHT button
+      _p2Tank->moveTo(direction::UP);
+    if (fireBtnP2) // FIRE button
+      _p2Tank->shoot();
   }
 
 protected:
@@ -360,8 +393,8 @@ protected:
   std::map<int, bool> _pressedKeysP1;
   std::map<int, bool> _pressedKeysP2;
   osg::ref_ptr<osgViewer::Viewer> _viewer;
-  SDL_Joystick* joy1;
-  SDL_Joystick* joy2;
+  SDL_Joystick* _joy1;
+  SDL_Joystick* _joy2;
 };
 
 int main(int argc, char** argv)

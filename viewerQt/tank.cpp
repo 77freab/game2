@@ -4,6 +4,8 @@
 #include <osg/Switch>
 #include <cmath>
 
+const int SHOOT_TIMEOUT = 500;
+
 extern std::map<osg::Vec2i, blockType> map;
 extern std::map<osg::Vec2i, tile*> tileMap;
 extern std::list<osg::Node*> toDelete;
@@ -14,7 +16,7 @@ tank::tank(int x, int z, std::string texTankType)
   _ul(new tile(x, 0, z + 8, texTankType + "UP_C1/ul.png", true)),
   _ur(new tile(x + 8, 0, z + 8, texTankType + "UP_C1/ur.png", true)),
   _texTankType(texTankType), _clb(new tankCallback),
-  _x0(x), _z0(z), _x(x), _z(z)
+  _timer(new QDeadlineTimer(SHOOT_TIMEOUT)), _x0(x), _z0(z), _x(x), _z(z)
 {
   this->setDataVariance(osg::Object::DYNAMIC);
   this->setUpdateCallback(_clb);
@@ -159,12 +161,13 @@ void tank::move()
 
 void tank::shoot()
 {
-  if (_projectile == nullptr)
+  if (_timer->hasExpired())
   {
     _projectile = new projectile(_x + 4, 0, _z + 4, _curDir, 
       "projectile/" + _texDir + ".png", this, _enemyTank);
     this->getParent(0)->addChild(_projectile);
     _projectile->setName(this->getName() + " - projectile");
+    _timer->setRemainingTime(SHOOT_TIMEOUT);
   }
 }
 
@@ -245,14 +248,14 @@ void projectile::move()
     // уничтожаем снаряд
     toDelete.push_back(this);
     this->removeUpdateCallback(_clb);
-    _parentTank->_projectile = nullptr;
+    //_parentTank->_projectile = nullptr;
   }
   else // если на пути граница уровня или броня (неразрушаемое)
   {
     // уничтожаем снаряд
     toDelete.push_back(this);
     this->removeUpdateCallback(_clb);
-    _parentTank->_projectile = nullptr;
+    //_parentTank->_projectile = nullptr;
   }
 
   if (_z+4 >= _enemyTank->_z && _z+4 <= _enemyTank->_z + 16)
