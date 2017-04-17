@@ -38,7 +38,8 @@ public:
 private:
   direction _dir;
   osg::Matrix mT;
-  osg::Vec2i _collisionPt;
+  osg::Vec2i _collisionPt1;
+  osg::Vec2i _collisionPt2;
   tank* _parentTank;
   tank* _enemyTank;
   int _x;
@@ -61,6 +62,7 @@ public:
   void setEnemy(tank* enemy);
   tank* _enemyTank;
   osg::ref_ptr<tankCallback> _clb;
+  QDeadlineTimer* _timer;
 private:
   osg::ref_ptr<tile> _dl;
   osg::ref_ptr<tile> _dr;
@@ -68,7 +70,7 @@ private:
   osg::ref_ptr<tile> _ur;
   osg::Vec2i _collisionPt1;
   osg::Vec2i _collisionPt2;
-  QDeadlineTimer* _timer;
+  osg::ref_ptr<osg::MatrixTransform> tempMt;
   const int _x0;
   const int _z0;
   direction _goDir = direction::UP;

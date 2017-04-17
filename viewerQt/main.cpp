@@ -86,10 +86,10 @@ public:
     scene->setName("main scene");
     void createMap(osg::ref_ptr<osg::Group> scene);
     createMap(scene);
-    _p1Tank = new tank(80, 8, "yellow/T1_");
+    _p1Tank = new tank(88, 16, "tryG.png"); // "yellow/T1_"
     scene->addChild(_p1Tank);
     _p1Tank->setName(scene->getName() + " - 1st player tank");
-    _p2Tank = new tank(144, 200, "green/T1_");
+    _p2Tank = new tank(152, 208, "tryR.png"); // "green/T1_" 152, 208
     scene->addChild(_p2Tank);
     _p2Tank->setName(scene->getName() + " - 2nd player tank");
     _p1Tank->setEnemy(_p2Tank.get());
@@ -293,7 +293,7 @@ public:
     // Check for joystick
     if (SDL_NumJoysticks() > 0)
     {
-      _console->insertPlainText(QString::fromLocal8Bit("Найдено ") + QString::number(SDL_NumJoysticks()) + QString::fromLocal8Bit(" джойстиков\n"));
+      _console->insertPlainText(QString::fromLocal8Bit("Найдено ") + QString::number(SDL_NumJoysticks()) + QString::fromLocal8Bit(" джойстиков\n\n"));
       // Open joystick
       _joy1 = SDL_JoystickOpen(0);
       _joy2 = SDL_JoystickOpen(1);
@@ -347,13 +347,13 @@ public:
     fireBtnP1 = SDL_JoystickGetButton(_joy1, 2);
 
     if (vAxisP1 < -20000) // UP button
-      _p1Tank->moveTo(direction::LEFT);
-    if (vAxisP1 > 20000) // DOWN button
       _p1Tank->moveTo(direction::RIGHT);
+    if (vAxisP1 > 20000) // DOWN button
+      _p1Tank->moveTo(direction::LEFT);
     if (hAxisP1 < -20000) // LEFT button
-      _p1Tank->moveTo(direction::DOWN);
-    if (hAxisP1 > 20000) // RIGHT button
       _p1Tank->moveTo(direction::UP);
+    if (hAxisP1 > 20000) // RIGHT button
+      _p1Tank->moveTo(direction::DOWN);
     if (fireBtnP1) // FIRE button
       _p1Tank->shoot();
 
@@ -363,18 +363,18 @@ public:
     bool startBtnP2, fireBtnP2;
 
     hAxisP2 = SDL_JoystickGetAxis(_joy2, 0);
-    vAxisP2 = SDL_JoystickGetAxis(_joy2, 1);
+    vAxisP2 = SDL_JoystickGetAxis(_joy2, 4);
     startBtnP2 = SDL_JoystickGetButton(_joy2, 9);
     fireBtnP2 = SDL_JoystickGetButton(_joy2, 2);
 
     if (vAxisP2 < -20000) // UP button
-      _p2Tank->moveTo(direction::LEFT);
-    if (vAxisP2 > 20000) // DOWN button
       _p2Tank->moveTo(direction::RIGHT);
+    if (vAxisP2 > 20000) // DOWN button
+      _p2Tank->moveTo(direction::LEFT);
     if (hAxisP2 < -20000) // LEFT button
-      _p2Tank->moveTo(direction::DOWN);
-    if (hAxisP2 > 20000) // RIGHT button
       _p2Tank->moveTo(direction::UP);
+    if (hAxisP2 > 20000) // RIGHT button
+      _p2Tank->moveTo(direction::DOWN);
     if (fireBtnP2) // FIRE button
       _p2Tank->shoot();
   }
