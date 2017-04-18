@@ -52,13 +52,12 @@ public:
 
     connect(_btn, &QPushButton::clicked, this, &ViewerWidget::restart);
 
-    if (testSDLJoystick())
-    {
-      _viewer->setThreadingModel(threadingModel);
-      _viewer->setKeyEventSetsDone(0);
-      _scene = createScene();
-      _widget = addViewWidget(createGraphicsWindow(0, 0, 800, 700), _scene->asNode());
-    }
+    testSDLJoystick();
+
+    _viewer->setThreadingModel(threadingModel);
+    _viewer->setKeyEventSetsDone(0);
+    _scene = createScene();
+    _widget = addViewWidget(createGraphicsWindow(0, 0, 800, 700), _scene->asNode());
 
     _hLayout = new QHBoxLayout;
     _vLayout = new QVBoxLayout;
@@ -89,7 +88,7 @@ public:
     _p1Tank = new tank(88, 16, "tryG.png"); // "yellow/T1_"
     scene->addChild(_p1Tank);
     _p1Tank->setName(scene->getName() + " - 1st player tank");
-    _p2Tank = new tank(152, 208, "tryR.png"); // "green/T1_" 152, 208
+    _p2Tank = new tank(152, 208, "tryR.png"); // "green/T1_"
     scene->addChild(_p2Tank);
     _p2Tank->setName(scene->getName() + " - 2nd player tank");
     _p1Tank->setEnemy(_p2Tank.get());
@@ -133,24 +132,21 @@ public:
 
     camera->setClearColor(osg::Vec4(0, 0, 0, 1));
     camera->setViewport(new osg::Viewport(0, 0, traits->width, traits->height));
-    //camera->setViewMatrixAsLookAt({ 128, -440, 112 }, { 128, 0, 112 }, { 0, 0, 1 });
     camera->setViewMatrixAsLookAt({ -100, -440, -100 }, { 128, 0, 112 }, { 1, 1, 1 });
     camera->setProjectionMatrixAsPerspective(28.0f, 32./28, 1.0f, 10000.0f);
 
     _viewer->setSceneData(scene);
     //_viewer->addEventHandler(new osgViewer::StatsHandler);
     //_viewer->addEventHandler(this);
-    //_viewer->setCameraManipulator(new osgGA::TrackballManipulator);
+    _viewer->setCameraManipulator(new osgGA::TrackballManipulator);
     gw->setTouchEventsEnabled(true);
     return gw->getGLWidget();
   }
 
-  osgQt::GraphicsWindowQt* createGraphicsWindow(int x, int y, int w, int h, const std::string& name = "", bool windowDecoration = false)
+  osgQt::GraphicsWindowQt* createGraphicsWindow(int x, int y, int w, int h)
   {
     osg::DisplaySettings* ds = osg::DisplaySettings::instance().get();
     osg::ref_ptr<osg::GraphicsContext::Traits> traits = new osg::GraphicsContext::Traits;
-    traits->windowName = name;
-    traits->windowDecoration = windowDecoration;
     traits->x = x;
     traits->y = y;
     traits->width = w;
@@ -333,50 +329,87 @@ public:
       toDelete.pop_front();
     }
 
-    _p1Tank->stop();
-    _p2Tank->stop();
+    if (SDL_NumJoysticks() > 0)
+    {
+      _p1Tank->stop();
+      _p2Tank->stop();
 
-    SDL_JoystickUpdate();
+      int a = _viewer->getCamera()->getViewMatrix()(3, 0);
+      int b = _viewer->getCamera()->getViewMatrix()(3, 1);
 
-    int hAxisP1, vAxisP1;
-    bool startBtnP1, fireBtnP1;
+      direction up, down, left, right;
 
-    hAxisP1 = SDL_JoystickGetAxis(_joy1, 0);
-    vAxisP1 = SDL_JoystickGetAxis(_joy1, 1);
-    startBtnP1 = SDL_JoystickGetButton(_joy1, 9);
-    fireBtnP1 = SDL_JoystickGetButton(_joy1, 2);
+      if (a < 0 && b < 0)
+      {
+        up = direction::UP;
+        down = direction::DOWN;
+        left = direction::LEFT;
+        right = direction::RIGHT;
+      }
+      if (a > 0 && b < 0)
+      {
+        up = direction::RIGHT;
+        down = direction::LEFT;
+        left = direction::UP;
+        right = direction::DOWN;
+      }
+      if (a > 0 && b > 0)
+      {
+        up = direction::DOWN;
+        down = direction::UP;
+        left = direction::RIGHT;
+        right = direction::LEFT;
+      }
+      if (a < 0 && b > 0)
+      {
+        up = direction::LEFT;
+        down = direction::RIGHT;
+        left = direction::DOWN;
+        right = direction::UP;
+      }
 
-    if (vAxisP1 < -20000) // UP button
-      _p1Tank->moveTo(direction::RIGHT);
-    if (vAxisP1 > 20000) // DOWN button
-      _p1Tank->moveTo(direction::LEFT);
-    if (hAxisP1 < -20000) // LEFT button
-      _p1Tank->moveTo(direction::UP);
-    if (hAxisP1 > 20000) // RIGHT button
-      _p1Tank->moveTo(direction::DOWN);
-    if (fireBtnP1) // FIRE button
-      _p1Tank->shoot();
+      SDL_JoystickUpdate();
 
-    ////////////////////////////////////////////////////////////
+      int hAxisP1, vAxisP1;
+      bool startBtnP1, fireBtnP1;
 
-    int hAxisP2, vAxisP2;
-    bool startBtnP2, fireBtnP2;
+      hAxisP1 = SDL_JoystickGetAxis(_joy1, 0);
+      vAxisP1 = SDL_JoystickGetAxis(_joy1, 1);
+      startBtnP1 = SDL_JoystickGetButton(_joy1, 9);
+      fireBtnP1 = SDL_JoystickGetButton(_joy1, 2);
 
-    hAxisP2 = SDL_JoystickGetAxis(_joy2, 0);
-    vAxisP2 = SDL_JoystickGetAxis(_joy2, 4);
-    startBtnP2 = SDL_JoystickGetButton(_joy2, 9);
-    fireBtnP2 = SDL_JoystickGetButton(_joy2, 2);
+      if (vAxisP1 < -20000) // UP button
+        _p1Tank->moveTo(up);
+      if (vAxisP1 > 20000) // DOWN button
+        _p1Tank->moveTo(down);
+      if (hAxisP1 < -20000) // LEFT button
+        _p1Tank->moveTo(left);
+      if (hAxisP1 > 20000) // RIGHT button
+        _p1Tank->moveTo(right);
+      if (fireBtnP1) // FIRE button
+        _p1Tank->shoot();
 
-    if (vAxisP2 < -20000) // UP button
-      _p2Tank->moveTo(direction::RIGHT);
-    if (vAxisP2 > 20000) // DOWN button
-      _p2Tank->moveTo(direction::LEFT);
-    if (hAxisP2 < -20000) // LEFT button
-      _p2Tank->moveTo(direction::UP);
-    if (hAxisP2 > 20000) // RIGHT button
-      _p2Tank->moveTo(direction::DOWN);
-    if (fireBtnP2) // FIRE button
-      _p2Tank->shoot();
+      ////////////////////////////////////////////////////////////
+
+      int hAxisP2, vAxisP2;
+      bool startBtnP2, fireBtnP2;
+
+      hAxisP2 = SDL_JoystickGetAxis(_joy2, 0);
+      vAxisP2 = SDL_JoystickGetAxis(_joy2, 4);
+      startBtnP2 = SDL_JoystickGetButton(_joy2, 9);
+      fireBtnP2 = SDL_JoystickGetButton(_joy2, 2);
+
+      if (vAxisP2 < -20000) // UP button
+        _p2Tank->moveTo(up);
+      if (vAxisP2 > 20000) // DOWN button
+        _p2Tank->moveTo(down);
+      if (hAxisP2 < -20000) // LEFT button
+        _p2Tank->moveTo(left);
+      if (hAxisP2 > 20000) // RIGHT button
+        _p2Tank->moveTo(right);
+      if (fireBtnP2) // FIRE button
+        _p2Tank->shoot();
+    }
   }
 
 protected:
