@@ -4,31 +4,24 @@
 #include <QWidget>
 #include <QPushButton>
 #include <QtWidgets/QPlainTextEdit>
-#include <QtWidgets/QLineEdit>
 
 #include <osgViewer/ViewerEventHandlers>
-
 #include <osgDB/ReadFile>
 #include <osgGA/TrackballManipulator>
-
 #include <osgQt/GraphicsWindowQt>
-
 #include <osgUtil/Optimizer>
 
-#include <iostream>
 #include <list>
+#include <cstdlib>
+#include <ctime>
 
 #include "tank.h"
-
-#include <QtTest/QTest> 
-#include <QDebug> 
 
 #include <SDL.h>
 #undef main
 
-std::list<osg::Node*> toDelete;
-
-
+//extern std::map<osg::Vec2i, blockType> map;
+//std::list<osg::Node*> toDelete;
 
 class ViewerWidget : public QWidget, public osgGA::GUIEventHandler
 {
@@ -73,6 +66,11 @@ public:
 
   void restart()
   {
+    _typeMap.clear();
+    _tileMap.clear();
+    _toDelete.clear();
+    _tank.clear();
+
     _scene = createScene();
     osgQt::GLWidget* widget = addViewWidget(createGraphicsWindow(0, 0, 800, 700), _scene->asNode());;
     _hLayout->replaceWidget(_widget, widget);
@@ -83,16 +81,42 @@ public:
   {
     osg::ref_ptr<osg::Group> scene = new osg::Group;
     scene->setName("main scene");
-    void createMap(osg::ref_ptr<osg::Group> scene);
-    createMap(scene);
-    _p1Tank = new tank(88, 16, "tryG.png"); // "yellow/T1_"
-    scene->addChild(_p1Tank);
-    _p1Tank->setName(scene->getName() + " - 1st player tank");
-    _p2Tank = new tank(152, 208, "tryR.png"); // "green/T1_"
-    scene->addChild(_p2Tank);
-    _p2Tank->setName(scene->getName() + " - 2nd player tank");
-    _p1Tank->setEnemy(_p2Tank.get());
-    _p2Tank->setEnemy(_p1Tank.get());
+    void createMap(osg::ref_ptr<osg::Group> scene, 
+      std::map<osg::Vec2i, blockType>& typeMap,
+      std::map<osg::Vec2i, tile*>& tileMap);
+    createMap(scene, _typeMap, _tileMap);
+    srand(time(NULL));
+    for (int i = 0; i < 2; i++)
+    {
+      int x = rand() % (27 - 3) + 3;
+      int z = rand() % (26 - 2) + 2;
+
+      std::map<osg::Vec2i, blockType>::const_iterator a;
+      if ((a = _typeMap.find({ x - 1, z })) != _typeMap.end())
+      {
+        _toDelete.push_back(_tileMap[{ x - 1, z }]);
+        _typeMap.erase(a);
+      }
+      if ((a = _typeMap.find({ x, z - 1 })) != _typeMap.end())
+      {
+        _toDelete.push_back(_tileMap[{ x, z-1 }]);
+        _typeMap.erase(a);
+      }
+      if ((a = _typeMap.find({ x - 1, z - 1 })) != _typeMap.end())
+      {
+        _toDelete.push_back(_tileMap[{ x - 1, z - 1 }]);
+        _typeMap.erase(a);
+      }
+      if ((a = _typeMap.find({ x, z })) != _typeMap.end())
+      {
+        _toDelete.push_back(_tileMap[{ x, z }]);
+        _typeMap.erase(a);
+      }
+
+      _tank.push_back(new tank(x * 8, z * 8, std::to_string(i), i, &_tank, &_typeMap, &_tileMap, &_toDelete)); //88, 16 | 152, 208
+      scene->addChild(_tank.back());
+      _tank.back()->setName(scene->getName() + " - " + std::to_string(i) + " player tank");
+    }
     osgUtil::Optimizer opt;
     opt.optimize(scene,
       osgUtil::Optimizer::FLATTEN_STATIC_TRANSFORMS |
@@ -122,9 +146,6 @@ public:
 
   osgQt::GLWidget* addViewWidget(osgQt::GraphicsWindowQt* gw, osg::Node* scene)
   {
-    //osgViewer::View* view = new osgViewer::View;
-    //addView(view);
-
     osg::Camera* camera = _viewer->getCamera();
     camera->setGraphicsContext(gw);
 
@@ -281,139 +302,105 @@ public:
   //  }
   //}
 
-  bool testSDLJoystick()
+  void testSDLJoystick()
   {
     // Initialize the joystick subsystem
     SDL_InitSubSystem(SDL_INIT_JOYSTICK);
 
     // Check for joystick
-    if (SDL_NumJoysticks() > 0)
+    _console->insertPlainText(QString::fromLocal8Bit("Найдено ") + QString::number(SDL_NumJoysticks()) + QString::fromLocal8Bit(" джойстиков\n\n"));
+    for (int joyNum = 0; joyNum < SDL_NumJoysticks(); joyNum++)
     {
-      _console->insertPlainText(QString::fromLocal8Bit("Найдено ") + QString::number(SDL_NumJoysticks()) + QString::fromLocal8Bit(" джойстиков\n\n"));
-      // Open joystick
-      _joy1 = SDL_JoystickOpen(0);
-      _joy2 = SDL_JoystickOpen(1);
-
-      if (_joy1)
+      _joy = SDL_JoystickOpen(joyNum);
+      if (_joy)
       {
         _console->insertPlainText(
-          "Opened Joystick 0\nName: " + QString(SDL_JoystickName(_joy1)) +
-          "\nNumber of Axes: " + QString::number(SDL_JoystickNumAxes(_joy1)) +
-          "\nNumber of Buttons: " + QString::number(SDL_JoystickNumButtons(_joy1)) +
-          "\nNumber of Balls: " + QString::number(SDL_JoystickNumBalls(_joy1)) + "\n\n"
+          "Opened Joystick " + QString::number(joyNum) +
+          "\nName: " + QString(SDL_JoystickName(_joy)) +
+          "\nNumber of Axes: " + QString::number(SDL_JoystickNumAxes(_joy)) +
+          "\nNumber of Buttons: " + QString::number(SDL_JoystickNumButtons(_joy)) +
+          "\nNumber of Balls: " + QString::number(SDL_JoystickNumBalls(_joy)) + "\n\n"
           );
       }
-      if (_joy2)
-      {
-        _console->insertPlainText(
-          "Opened Joystick 0\nName: " + QString(SDL_JoystickName(_joy2)) +
-          "\nNumber of Axes: " + QString::number(SDL_JoystickNumAxes(_joy2)) +
-          "\nNumber of Buttons: " + QString::number(SDL_JoystickNumButtons(_joy2)) +
-          "\nNumber of Balls: " + QString::number(SDL_JoystickNumBalls(_joy2)) + "\n\n"
-          );
-      }
-      return true;
     }
-    else
+    if (SDL_NumJoysticks() == 0)
       _console->insertPlainText(QString::fromLocal8Bit("Не найден ни один джойстик\n"));
-    return false;
   }
 
   virtual void paintEvent(QPaintEvent* event)
   {
     _viewer->frame();
 
-    while (!toDelete.empty())
+    while (!_toDelete.empty())
     {
-      toDelete.front()->getParent(0)->removeChild(toDelete.front());
-      toDelete.pop_front();
+      _toDelete.front()->getParent(0)->removeChild(_toDelete.front());
+      _toDelete.pop_front();
     }
 
-    if (SDL_NumJoysticks() > 0)
+    //for (int joyNum = 0; joyNum < SDL_NumJoysticks(); joyNum++)
+    for (auto it = _tank.cbegin(); it != _tank.end(); ++it)
     {
-      _p1Tank->stop();
-      _p2Tank->stop();
+      (*it)->stop();
 
-      int a = _viewer->getCamera()->getViewMatrix()(3, 0);
-      int b = _viewer->getCamera()->getViewMatrix()(3, 1);
+      _joy = SDL_JoystickOpen((*it)->_joyNum);
 
-      direction up, down, left, right;
+      _x = _viewer->getCamera()->getViewMatrix()(3, 0);
+      _z = _viewer->getCamera()->getViewMatrix()(3, 1);
 
-      if (a < 0 && b < 0)
+      if (_x < 0 && _z < 0)
       {
-        up = direction::UP;
-        down = direction::DOWN;
-        left = direction::LEFT;
-        right = direction::RIGHT;
+        _up = direction::UP;
+        _down = direction::DOWN;
+        _left = direction::LEFT;
+        _right = direction::RIGHT;
       }
-      if (a > 0 && b < 0)
+      if (_x > 0 && _z < 0)
       {
-        up = direction::RIGHT;
-        down = direction::LEFT;
-        left = direction::UP;
-        right = direction::DOWN;
+        _up = direction::RIGHT;
+        _down = direction::LEFT;
+        _left = direction::UP;
+        _right = direction::DOWN;
       }
-      if (a > 0 && b > 0)
+      if (_x > 0 && _z > 0)
       {
-        up = direction::DOWN;
-        down = direction::UP;
-        left = direction::RIGHT;
-        right = direction::LEFT;
+        _up = direction::DOWN;
+        _down = direction::UP;
+        _left = direction::RIGHT;
+        _right = direction::LEFT;
       }
-      if (a < 0 && b > 0)
+      if (_x < 0 && _z > 0)
       {
-        up = direction::LEFT;
-        down = direction::RIGHT;
-        left = direction::DOWN;
-        right = direction::UP;
+        _up = direction::LEFT;
+        _down = direction::RIGHT;
+        _left = direction::DOWN;
+        _right = direction::UP;
       }
 
       SDL_JoystickUpdate();
 
-      int hAxisP1, vAxisP1;
-      bool startBtnP1, fireBtnP1;
+      _hAxis = SDL_JoystickGetAxis(_joy, 0); // вертикальная ось - первая
+      _vAxis = SDL_JoystickGetAxis(_joy, SDL_JoystickNumAxes(_joy) - 1); // горизонтальная ось - последняя
+      _startBtn = SDL_JoystickGetButton(_joy, 9);
+      _fireBtn = SDL_JoystickGetButton(_joy, 2);
 
-      hAxisP1 = SDL_JoystickGetAxis(_joy1, 0);
-      vAxisP1 = SDL_JoystickGetAxis(_joy1, 1);
-      startBtnP1 = SDL_JoystickGetButton(_joy1, 9);
-      fireBtnP1 = SDL_JoystickGetButton(_joy1, 2);
+      if (_vAxis < -20000) // UP button
+        (*it)->moveTo(_up);
 
-      if (vAxisP1 < -20000) // UP button
-        _p1Tank->moveTo(up);
-      if (vAxisP1 > 20000) // DOWN button
-        _p1Tank->moveTo(down);
-      if (hAxisP1 < -20000) // LEFT button
-        _p1Tank->moveTo(left);
-      if (hAxisP1 > 20000) // RIGHT button
-        _p1Tank->moveTo(right);
-      if (fireBtnP1) // FIRE button
-        _p1Tank->shoot();
+      if (_vAxis > 20000) // DOWN button
+        (*it)->moveTo(_down);
 
-      ////////////////////////////////////////////////////////////
+      if (_hAxis < -20000) // LEFT button
+        (*it)->moveTo(_left);
 
-      int hAxisP2, vAxisP2;
-      bool startBtnP2, fireBtnP2;
+      if (_hAxis > 20000) // RIGHT button
+        (*it)->moveTo(_right);
 
-      hAxisP2 = SDL_JoystickGetAxis(_joy2, 0);
-      vAxisP2 = SDL_JoystickGetAxis(_joy2, 4);
-      startBtnP2 = SDL_JoystickGetButton(_joy2, 9);
-      fireBtnP2 = SDL_JoystickGetButton(_joy2, 2);
-
-      if (vAxisP2 < -20000) // UP button
-        _p2Tank->moveTo(up);
-      if (vAxisP2 > 20000) // DOWN button
-        _p2Tank->moveTo(down);
-      if (hAxisP2 < -20000) // LEFT button
-        _p2Tank->moveTo(left);
-      if (hAxisP2 > 20000) // RIGHT button
-        _p2Tank->moveTo(right);
-      if (fireBtnP2) // FIRE button
-        _p2Tank->shoot();
+      if (_fireBtn) // FIRE button
+        (*it)->shoot();
     }
   }
 
 protected:
-
   QTimer _timer;
   osgQt::GLWidget* _widget;
   QHBoxLayout* _hLayout;
@@ -421,13 +408,20 @@ protected:
   QPushButton* _btn;
   QPlainTextEdit* _console;
   osg::ref_ptr<osg::Group> _scene;
-  osg::ref_ptr<tank> _p1Tank;
-  osg::ref_ptr<tank> _p2Tank;
-  std::map<int, bool> _pressedKeysP1;
-  std::map<int, bool> _pressedKeysP2;
+  std::list<osg::ref_ptr<tank>> _tank;
+  //std::map<int, bool> _pressedKeysP1; // для игры с клавиатуры
+  //std::map<int, bool> _pressedKeysP2;
   osg::ref_ptr<osgViewer::Viewer> _viewer;
-  SDL_Joystick* _joy1;
-  SDL_Joystick* _joy2;
+
+  SDL_Joystick* _joy;
+  int _hAxis, _vAxis;
+  bool _startBtn, _fireBtn;
+  direction _up, _down, _left, _right;
+  int _x, _z;
+
+  std::map<osg::Vec2i, blockType> _typeMap;
+  std::map<osg::Vec2i, tile*> _tileMap;
+  std::list<osg::Node*> _toDelete;
 };
 
 int main(int argc, char** argv)

@@ -21,7 +21,7 @@ tile::tile(int x, int y, int z, std::string texPath, bool pr)
   m.makeTranslate(x, y, z);
   this->setMatrix(m);
 
-  _geom->setColorArray(_color);
+  _geom->setColorArray(_color.get());
   _geom->setColorBinding(osg::Geometry::BIND_OVERALL);
   _color->push_back(osg::Vec4(1.f, 1.f, 1.f, 1.f));
   if (pr)
@@ -83,7 +83,7 @@ tile::tile(int x, int y, int z, std::string texPath, bool pr)
     _vertices->push_back(osg::Vec3(0, -8, 8)); // 20
   }
 
-  _geom->setVertexArray(_vertices);
+  _geom->setVertexArray(_vertices.get());
 
   //_normals->setBinding(osg::Array::BIND_PER_PRIMITIVE_SET);
 
@@ -96,7 +96,7 @@ tile::tile(int x, int y, int z, std::string texPath, bool pr)
   _normals->setBinding(osg::Array::BIND_OVERALL);
   _normals->push_back(osg::Vec3( 0, -1,  0));
 
-  _geom->setNormalArray(_normals);
+  _geom->setNormalArray(_normals.get());
 
   _texCoord->push_back(osg::Vec2(0, 0));
   _texCoord->push_back(osg::Vec2(1, 0));
@@ -112,9 +112,9 @@ tile::tile(int x, int y, int z, std::string texPath, bool pr)
       _texCoord->push_back(osg::Vec2(0, 1));
     }
   }
-  _geom->setTexCoordArray(0, _texCoord, osg::Array::Binding::BIND_OVERALL);
+  _geom->setTexCoordArray(0, _texCoord.get(), osg::Array::Binding::BIND_OVERALL);
   setTexture(texPath);
 
-  _geode->addDrawable(_geom);
-  this->addChild(_geode);
+  _geode->addDrawable(_geom.get());
+  this->addChild(_geode.get());
 }

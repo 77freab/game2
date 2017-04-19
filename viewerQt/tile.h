@@ -2,8 +2,17 @@
 
 #include <string>
 #include <osg/MatrixTransform>
-
 #include <osg/Texture2D>
+
+enum class blockType
+{
+  BORDER = 0,
+  BRICK = 1,
+  ARMOR = 2,
+  WATER = 3,
+  BUSHES = 4,
+  ICE = 5
+};
 
 class tile : public osg::MatrixTransform
 {

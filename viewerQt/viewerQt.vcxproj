@@ -74,7 +74,6 @@
     <ClCompile Include="tile.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="createMap.h" />
     <ClInclude Include="tank.h" />
     <ClInclude Include="tile.h" />
   </ItemGroup>
