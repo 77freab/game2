@@ -5,6 +5,9 @@
 #include <osg/Geometry>
 #include <osg/Geode>
 #include <QDeadlineTimer> 
+#include <QObject> 
+#include <osgDB/ReadFile>
+#include <QTimer>
 
 enum class direction
 {
@@ -28,8 +31,9 @@ public:
 
 class projectile;
 
-class tank : public osg::MatrixTransform
+class tank : public QObject, public osg::MatrixTransform
 {
+  Q_OBJECT
 public:
   tank(int x, int z, std::string texNum, int joyNum,
     std::list<osg::ref_ptr<tank>>* tank,
@@ -47,6 +51,10 @@ public:
   osg::ref_ptr<tankCallback> _clb;
   QDeadlineTimer* _timer;
   int _joyNum;
+  int _killCount = 0;
+signals:
+  void smbdyKilled(int killCount);
+  void enemyNeedRespawn(int player);
 private:
   std::map<osg::Vec2i, blockType>* _typeMap;
   std::map<osg::Vec2i, tile*>* _tileMap;

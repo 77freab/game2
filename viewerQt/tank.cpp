@@ -1,5 +1,4 @@
 #include "tank.h"
-#include <osgDB/ReadFile>
 
 const int SHOOT_TIMEOUT = 300; // задержка между выстрелами в мс
 
@@ -47,6 +46,7 @@ void tank::stop()
 
 void tank::move()
 {
+  // вычисление точек коллизии в зависимости от направления танка
   osg::Vec2i cpt1, cpt2;
   switch (_goDir)
   {
@@ -87,6 +87,7 @@ void tank::move()
   std::map<osg::Vec2i, blockType>::const_iterator a, b;
   bool aGo = false, bGo = false, tStop = false;
 
+  // определение коллизий с блоками
   if ((a = _typeMap->find(_collisionPt1)) != _typeMap->end())
   {
     if ((*a).second == blockType::ICE)
@@ -112,17 +113,23 @@ void tank::move()
   else
     bGo = true;
 
+  // если небыло коллизий с блоками определяет коллизии с другими танками
   if (aGo && bGo)
   {
+    // цикл по всем танкам
     for (auto it = _tank->cbegin(); it != _tank->end(); ++it)
     {
       if ((*it).get() != this)
+      {
         if (cpt1[0] > (*it)->_x - 8 && cpt1[0] < (*it)->_x + 8 &&
           cpt1[1] > (*it)->_z - 8 && cpt1[1] < (*it)->_z + 8)
-          if (cpt2[0] > (*it)->_x - 8 && cpt2[0] < (*it)->_x + 8 &&
-            cpt2[1] > (*it)->_z - 8 && cpt2[1] < (*it)->_z + 8)
-            tStop = true;
+          tStop = true; // впереди танк
+        if (cpt2[0] > (*it)->_x - 8 && cpt2[0] < (*it)->_x + 8 &&
+          cpt2[1] > (*it)->_z - 8 && cpt2[1] < (*it)->_z + 8)
+          tStop = true;
+      }
     }
+    // впереди чисто двигаемся
     if (!tStop)
     {
       if (_goDir == direction::UP)
@@ -136,30 +143,9 @@ void tank::move()
     }
   }
 
-  //if (((a = _typeMap->find(_collisionPt1)) == _typeMap->end()) && ((b = _typeMap->find(_collisionPt2)) == _typeMap->end()))
-  //  if (cpt1[0] <= _enemyTank->_x - 8 || cpt1[0] >= _enemyTank->_x + 8 ||
-  //      cpt1[1] <= _enemyTank->_z - 8 || cpt1[1] >= _enemyTank->_z + 8)
-  //    if (cpt2[0] <= _enemyTank->_x - 8 || cpt2[0] >= _enemyTank->_x + 8 ||
-  //        cpt2[1] <= _enemyTank->_z - 8 || cpt2[1] >= _enemyTank->_z + 8)
-  //{
-  //  if (_goDir == direction::UP)
-  //    _z++;
-  //  if (_goDir == direction::DOWN)
-  //    _z--;
-  //  if (_goDir == direction::LEFT)
-  //    _x--;
-  //  if (_goDir == direction::RIGHT)
-  //    _x++;
-  //}
-  
-
-  //if ((((*a).second == blockType::ICE) || ((*a).second == blockType::BUSHES)) && (((*b).second == blockType::ICE) || ((*b).second == blockType::BUSHES)))
-  //  _z++;
-
-
   osg::Matrix mR;
 
-  if (_curDir != _goDir) // танк поворачивает
+  if (_curDir != _goDir) // если танк поворачивает
   {
     switch (_goDir)
     {
@@ -363,14 +349,13 @@ void projectile::move()
           (*it)->_timer->setRemainingTime(-1); // чтоб не мог стрелять
           (*it)->removeUpdateCallback((*it)->_clb); // чтоб не мог ездить
           _toDelete->push_back((*it)); // ставим в очередь на удаление со сцены
+          int playerNum = (*it)->_joyNum; // запонимаем номер уничтоженного игрока чтобы его зареспавнить
           it = _tank->erase(it); // убираем из списка всех танков
+          emit _parentTank->smbdyKilled(++_parentTank->_killCount); // увеличиваем число убийств
+          // через какое-то время противнек зареспанится
+          QTimer::singleShot(3000, _parentTank, [this, playerNum] { emit _parentTank->enemyNeedRespawn(playerNum); });
           if (it == _tank->end())
             break;
-          // останавливаем игру
-          //_parentTank->_timer->setRemainingTime(-1);
-          //_parentTank->removeUpdateCallback(_parentTank->_clb);
-          //if (_enemyTank->_projectile != nullptr)
-          //  _enemyTank->_projectile->removeUpdateCallback(_enemyTank->_projectile->_clb);
         }
   }
 

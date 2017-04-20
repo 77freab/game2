@@ -1,9 +1,9 @@
-#include <QTimer>
 #include <QApplication>
 #include <QBoxLayout>
 #include <QWidget>
 #include <QPushButton>
 #include <QtWidgets/QPlainTextEdit>
+#include <QtWidgets/QTreeWidget>
 
 #include <osgViewer/ViewerEventHandlers>
 #include <osgDB/ReadFile>
@@ -28,40 +28,126 @@ class ViewerWidget : public QWidget, public osgGA::GUIEventHandler
 public:
   ViewerWidget(QWidget* parent = 0, Qt::WindowFlags f = 0, osgViewer::ViewerBase::ThreadingModel threadingModel = osgViewer::Viewer::SingleThreaded) : QWidget(parent, f), _viewer(new osgViewer::Viewer)
   {
-    QFont font;
-    font.setPointSize(20);
+    srand(time(NULL));
+    _viewer->setThreadingModel(threadingModel);
+    _viewer->setKeyEventSetsDone(0);
+
+    _hLayout = new QHBoxLayout;
+
+    _scene = createScene();
+    _widget = addViewWidget(createGraphicsWindow(0, 0, 800, 700), _scene.get());
+    
+    _hLayout->addWidget(_widget);
+
+    _vLayout = new QVBoxLayout;
 
     _btn = new QPushButton("RESTART");
+    QFont font;
+    font.setPointSize(20);
     _btn->setMaximumWidth(250);
     _btn->setMinimumHeight(50);
     _btn->setFont(font);
+
+    _vLayout->addWidget(_btn);
 
     _console = new QPlainTextEdit;
     _console->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
     _console->setTextInteractionFlags(Qt::NoTextInteraction);
     _console->setMaximumWidth(250);
 
-    QLocale::setDefault(QLocale(QLocale::Russian, QLocale::Russia));
+    _vLayout->addWidget(_console);
 
-    connect(_btn, &QPushButton::clicked, this, &ViewerWidget::restart);
+    _treeWidget = new QTreeWidget;
+    _treeWidget->setMaximumWidth(250);
+    _treeWidget->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    _treeWidget->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
+    QTreeWidgetItem *header = new QTreeWidgetItem();
+    _treeWidget->setHeaderItem(header);
+    header->setText(0, QString::fromLocal8Bit("Игрок"));
+    header->setText(1, QString::fromLocal8Bit("Кол-во убийств"));
+    header->setText(2, QString::fromLocal8Bit("Заспавнить"));
+    header->setTextAlignment(0, Qt::AlignCenter);
+    header->setTextAlignment(1, Qt::AlignCenter);
+    header->setTextAlignment(2, Qt::AlignCenter);
+    _treeWidget->setColumnWidth(0, 50);
+    _treeWidget->setColumnWidth(1, 100);
+    _treeWidget->setColumnWidth(2, 80);
+
+    _vLayout->addWidget(_treeWidget);
+
+    QPushButton* addPlayerBtn = new QPushButton;
+    addPlayerBtn->setText(QString::fromLocal8Bit("Добавить игрока"));
+
+    _vLayout->addWidget(addPlayerBtn);
+
+    _hLayout->addLayout(_vLayout);
 
     testSDLJoystick();
 
-    _viewer->setThreadingModel(threadingModel);
-    _viewer->setKeyEventSetsDone(0);
-    _scene = createScene();
-    _widget = addViewWidget(createGraphicsWindow(0, 0, 800, 700), _scene->asNode());
-
-    _hLayout = new QHBoxLayout;
-    _vLayout = new QVBoxLayout;
-    _hLayout->addWidget(_widget);
-    _hLayout->addLayout(_vLayout);
-    _vLayout->addWidget(_btn);
-    _vLayout->addWidget(_console);
     setLayout(_hLayout);
 
+    connect(addPlayerBtn, &QPushButton::clicked, this, &ViewerWidget::addPlayer);
+    connect(_btn, &QPushButton::clicked, this, &ViewerWidget::restart);
     connect(&_timer, SIGNAL(timeout()), this, SLOT(update()));
     _timer.start(10);
+  }
+
+  void addPlayer()
+  {
+    QTreeWidgetItem *item = new QTreeWidgetItem(_treeWidget);
+    int player = _playerNum;
+    item->setIcon(0, QIcon("./Resources/tank/tank" + QString::number(_playerNum % 13) + ".bmp"));
+    item->setText(1, QString::fromLocal8Bit("0"));
+    QPushButton* spawnBtn = new QPushButton("GO");
+    _treeWidget->setItemWidget(item, 2, spawnBtn);
+    connect(spawnBtn, &QPushButton::clicked, this, [this, player] { spawnPlayer(player); });
+    _playerNum++;
+    item->setTextAlignment(0, Qt::AlignCenter);
+    item->setTextAlignment(1, Qt::AlignCenter);
+    item->setTextAlignment(2, Qt::AlignCenter);
+  }
+
+  void spawnPlayer(const int player)
+  {
+    int x = rand() % (27 - 3) + 3;
+    int z = rand() % (26 - 2) + 2;
+
+    // если на месте спавна танка есть блоки, удаляем их
+    std::map<osg::Vec2i, blockType>::const_iterator a;
+    if ((a = _typeMap.find({ x - 1, z })) != _typeMap.end())
+    {
+      _toDelete.push_back(_tileMap[{ x - 1, z }]);
+      _typeMap.erase(a);
+    }
+    if ((a = _typeMap.find({ x, z - 1 })) != _typeMap.end())
+    {
+      _toDelete.push_back(_tileMap[{ x, z - 1 }]);
+      _typeMap.erase(a);
+    }
+    if ((a = _typeMap.find({ x - 1, z - 1 })) != _typeMap.end())
+    {
+      _toDelete.push_back(_tileMap[{ x - 1, z - 1 }]);
+      _typeMap.erase(a);
+    }
+    if ((a = _typeMap.find({ x, z })) != _typeMap.end())
+    {
+      _toDelete.push_back(_tileMap[{ x, z }]);
+      _typeMap.erase(a);
+    }
+
+    // добавляем танк
+    _tank.push_back(new tank(x * 8, z * 8, std::to_string(player % 13), player, &_tank, &_typeMap, &_tileMap, &_toDelete));
+    _scene->asGroup()->addChild(_tank.back());
+    _tank.back()->setName(_scene->getName() + " - " + std::to_string(player) + " player tank");
+
+    // при убистве счетчик будет обновляться
+    connect(_tank.back(), &tank::smbdyKilled, this, [this, player](int killCount) 
+      { _treeWidget->topLevelItem(player)->setText(1, QString::number(killCount)); });
+    // после уничтожения танк будет респавниться через какое-то время
+    connect(_tank.back(), &tank::enemyNeedRespawn, this, &ViewerWidget::spawnPlayer);
+
+    // делаем кнопку спавна неактивной
+    _treeWidget->itemWidget(_treeWidget->topLevelItem(player), 2)->setEnabled(false);
   }
 
   void restart()
@@ -70,14 +156,22 @@ public:
     _tileMap.clear();
     _toDelete.clear();
     _tank.clear();
+    _playerNum = 0;
+    // делаем кнопку спавна опять активной и обнуляем счетчик убийств
+    for (int i = 0; i < _treeWidget->topLevelItemCount(); i++)
+    {
+      QTreeWidgetItem* tempItem = _treeWidget->topLevelItem(i);
+      tempItem->setText(1, "0");
+      _treeWidget->itemWidget(tempItem, 2)->setEnabled(true);
+    }
 
     _scene = createScene();
-    osgQt::GLWidget* widget = addViewWidget(createGraphicsWindow(0, 0, 800, 700), _scene->asNode());;
+    osgQt::GLWidget* widget = addViewWidget(createGraphicsWindow(0, 0, 800, 700), _scene.get());;
     _hLayout->replaceWidget(_widget, widget);
     _widget = widget;
   }
 
-  osg::ref_ptr<osg::Group> createScene()
+  osg::ref_ptr<osg::Node> createScene()
   {
     osg::ref_ptr<osg::Group> scene = new osg::Group;
     scene->setName("main scene");
@@ -85,38 +179,7 @@ public:
       std::map<osg::Vec2i, blockType>& typeMap,
       std::map<osg::Vec2i, tile*>& tileMap);
     createMap(scene, _typeMap, _tileMap);
-    srand(time(NULL));
-    for (int i = 0; i < 2; i++)
-    {
-      int x = rand() % (27 - 3) + 3;
-      int z = rand() % (26 - 2) + 2;
 
-      std::map<osg::Vec2i, blockType>::const_iterator a;
-      if ((a = _typeMap.find({ x - 1, z })) != _typeMap.end())
-      {
-        _toDelete.push_back(_tileMap[{ x - 1, z }]);
-        _typeMap.erase(a);
-      }
-      if ((a = _typeMap.find({ x, z - 1 })) != _typeMap.end())
-      {
-        _toDelete.push_back(_tileMap[{ x, z-1 }]);
-        _typeMap.erase(a);
-      }
-      if ((a = _typeMap.find({ x - 1, z - 1 })) != _typeMap.end())
-      {
-        _toDelete.push_back(_tileMap[{ x - 1, z - 1 }]);
-        _typeMap.erase(a);
-      }
-      if ((a = _typeMap.find({ x, z })) != _typeMap.end())
-      {
-        _toDelete.push_back(_tileMap[{ x, z }]);
-        _typeMap.erase(a);
-      }
-
-      _tank.push_back(new tank(x * 8, z * 8, std::to_string(i), i, &_tank, &_typeMap, &_tileMap, &_toDelete)); //88, 16 | 152, 208
-      scene->addChild(_tank.back());
-      _tank.back()->setName(scene->getName() + " - " + std::to_string(i) + " player tank");
-    }
     osgUtil::Optimizer opt;
     opt.optimize(scene,
       osgUtil::Optimizer::FLATTEN_STATIC_TRANSFORMS |
@@ -141,7 +204,7 @@ public:
       osgUtil::Optimizer::VERTEX_POSTTRANSFORM |
       osgUtil::Optimizer::VERTEX_PRETRANSFORM
       );
-    return scene;
+    return scene.get();
   }
 
   osgQt::GLWidget* addViewWidget(osgQt::GraphicsWindowQt* gw, osg::Node* scene)
@@ -308,7 +371,7 @@ public:
     SDL_InitSubSystem(SDL_INIT_JOYSTICK);
 
     // Check for joystick
-    _console->insertPlainText(QString::fromLocal8Bit("Найдено ") + QString::number(SDL_NumJoysticks()) + QString::fromLocal8Bit(" джойстиков\n\n"));
+    _console->insertPlainText(QString::fromLocal8Bit("Найдено ") + QString::number(SDL_NumJoysticks()) + QString::fromLocal8Bit(" джойстиков:\n\n"));
     for (int joyNum = 0; joyNum < SDL_NumJoysticks(); joyNum++)
     {
       _joy = SDL_JoystickOpen(joyNum);
@@ -337,7 +400,6 @@ public:
       _toDelete.pop_front();
     }
 
-    //for (int joyNum = 0; joyNum < SDL_NumJoysticks(); joyNum++)
     for (auto it = _tank.cbegin(); it != _tank.end(); ++it)
     {
       (*it)->stop();
@@ -405,13 +467,15 @@ protected:
   osgQt::GLWidget* _widget;
   QHBoxLayout* _hLayout;
   QVBoxLayout* _vLayout;
+  QTreeWidget* _treeWidget;
   QPushButton* _btn;
   QPlainTextEdit* _console;
-  osg::ref_ptr<osg::Group> _scene;
   std::list<osg::ref_ptr<tank>> _tank;
   //std::map<int, bool> _pressedKeysP1; // для игры с клавиатуры
   //std::map<int, bool> _pressedKeysP2;
   osg::ref_ptr<osgViewer::Viewer> _viewer;
+  osg::ref_ptr<osg::Node> _scene;
+  int _playerNum = 0;
 
   SDL_Joystick* _joy;
   int _hAxis, _vAxis;
@@ -449,6 +513,7 @@ int main(int argc, char** argv)
   QApplication app(argc, argv);
   ViewerWidget* viewWidget = new ViewerWidget(0, Qt::Widget, threadingModel);
   viewWidget->setGeometry(100, 100, 1080, 700);
+  viewWidget->setWindowTitle("World of Tanks 2");
   viewWidget->show();
   return app.exec();
 }
