@@ -4,6 +4,7 @@
 #include <QPushButton>
 #include <QtWidgets/QPlainTextEdit>
 #include <QtWidgets/QTreeWidget>
+#include <QFileDialog>
 
 #include <osgViewer/ViewerEventHandlers>
 #include <osgDB/ReadFile>
@@ -31,6 +32,7 @@ public:
     srand(time(NULL));
     _viewer->setThreadingModel(threadingModel);
     _viewer->setKeyEventSetsDone(0);
+    _fileName = "./Resources/maps/test2.xml";
 
     _hLayout = new QHBoxLayout;
 
@@ -41,14 +43,19 @@ public:
 
     _vLayout = new QVBoxLayout;
 
-    _btn = new QPushButton("RESTART");
+    _restartBtn = new QPushButton("RESTART");
     QFont font;
     font.setPointSize(20);
-    _btn->setMaximumWidth(250);
-    _btn->setMinimumHeight(50);
-    _btn->setFont(font);
+    _restartBtn->setMaximumWidth(250);
+    _restartBtn->setMinimumHeight(50);
+    _restartBtn->setFont(font);
 
-    _vLayout->addWidget(_btn);
+    _vLayout->addWidget(_restartBtn);
+
+    _openMapBtn = new QPushButton("Open map");
+    _openMapBtn->setMaximumWidth(250);
+
+    _vLayout->addWidget(_openMapBtn);
 
     _console = new QPlainTextEdit;
     _console->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
@@ -75,10 +82,10 @@ public:
 
     _vLayout->addWidget(_treeWidget);
 
-    QPushButton* addPlayerBtn = new QPushButton;
-    addPlayerBtn->setText(QString::fromLocal8Bit("ƒобавить игрока"));
+    _addPlayerBtn = new QPushButton;
+    _addPlayerBtn->setText(QString::fromLocal8Bit("ƒобавить игрока"));
 
-    _vLayout->addWidget(addPlayerBtn);
+    _vLayout->addWidget(_addPlayerBtn);
 
     _hLayout->addLayout(_vLayout);
 
@@ -86,10 +93,16 @@ public:
 
     setLayout(_hLayout);
 
-    connect(addPlayerBtn, &QPushButton::clicked, this, &ViewerWidget::addPlayer);
-    connect(_btn, &QPushButton::clicked, this, &ViewerWidget::restart);
+    connect(_addPlayerBtn, &QPushButton::clicked, this, &ViewerWidget::addPlayer);
+    connect(_restartBtn, &QPushButton::clicked, this, &ViewerWidget::restart);
+    connect(_openMapBtn, &QPushButton::clicked, this, &ViewerWidget::loadMap);
     connect(&_timer, SIGNAL(timeout()), this, SLOT(update()));
     _timer.start(10);
+  }
+
+  void loadMap()
+  {
+    _fileName = QFileDialog::getOpenFileName(this, "Open map","./Resources/maps","XML files (*.xml)");
   }
 
   void addPlayer()
@@ -109,8 +122,8 @@ public:
 
   void spawnPlayer(const int player)
   {
-    int x = rand() % (27 - 3) + 3;
-    int z = rand() % (26 - 2) + 2;
+    int x = rand() % (MAP_SIZE[0] - 8) + 3;
+    int z = rand() % (MAP_SIZE[1] - 6) + 3;
 
     // если на месте спавна танка есть блоки, удал€ем их
     std::map<osg::Vec2i, blockType>::const_iterator a;
@@ -175,10 +188,10 @@ public:
   {
     osg::ref_ptr<osg::Group> scene = new osg::Group;
     scene->setName("main scene");
-    void createMap(osg::ref_ptr<osg::Group> scene, 
+    osg::Vec2i createMap(osg::ref_ptr<osg::Group> scene,
       std::map<osg::Vec2i, blockType>& typeMap,
-      std::map<osg::Vec2i, tile*>& tileMap);
-    createMap(scene, _typeMap, _tileMap);
+      std::map<osg::Vec2i, tile*>& tileMap, QString fileName);
+    MAP_SIZE = createMap(scene, _typeMap, _tileMap, _fileName);
 
     osgUtil::Optimizer opt;
     opt.optimize(scene,
@@ -468,14 +481,18 @@ protected:
   QHBoxLayout* _hLayout;
   QVBoxLayout* _vLayout;
   QTreeWidget* _treeWidget;
-  QPushButton* _btn;
+  QPushButton* _restartBtn;
+  QPushButton* _addPlayerBtn;
+  QPushButton* _openMapBtn;
   QPlainTextEdit* _console;
+  QString _fileName;
   std::list<osg::ref_ptr<tank>> _tank;
   //std::map<int, bool> _pressedKeysP1; // дл€ игры с клавиатуры
   //std::map<int, bool> _pressedKeysP2;
   osg::ref_ptr<osgViewer::Viewer> _viewer;
   osg::ref_ptr<osg::Node> _scene;
   int _playerNum = 0;
+  osg::Vec2i MAP_SIZE;
 
   SDL_Joystick* _joy;
   int _hAxis, _vAxis;
