@@ -32,7 +32,7 @@ public:
     srand(time(NULL));
     _viewer->setThreadingModel(threadingModel);
     _viewer->setKeyEventSetsDone(0);
-    _fileName = "./Resources/maps/test2.xml";
+    _fileName = "./Resources/maps/original1.xml";
 
     _hLayout = new QHBoxLayout;
 
