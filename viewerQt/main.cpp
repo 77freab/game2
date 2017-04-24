@@ -5,6 +5,7 @@
 #include <QtWidgets/QPlainTextEdit>
 #include <QtWidgets/QTreeWidget>
 #include <QFileDialog>
+#include <QMenu>
 
 #include <osgViewer/ViewerEventHandlers>
 #include <osgDB/ReadFile>
@@ -21,13 +22,13 @@
 #include <SDL.h>
 #undef main
 
-//extern std::map<osg::Vec2i, blockType> map;
-//std::list<osg::Node*> toDelete;
+const int SIDE_PANEL_SIZE = 405;
 
 class ViewerWidget : public QWidget, public osgGA::GUIEventHandler
 {
 public:
-  ViewerWidget(QWidget* parent = 0, Qt::WindowFlags f = 0, osgViewer::ViewerBase::ThreadingModel threadingModel = osgViewer::Viewer::SingleThreaded) : QWidget(parent, f), _viewer(new osgViewer::Viewer)
+  ViewerWidget(QWidget* parent = 0, Qt::WindowFlags f = 0, osgViewer::ViewerBase::ThreadingModel threadingModel = osgViewer::Viewer::SingleThreaded)
+    : QWidget(parent, f), _viewer(new osgViewer::Viewer)
   {
     srand(time(NULL));
     _viewer->setThreadingModel(threadingModel);
@@ -46,39 +47,45 @@ public:
     _restartBtn = new QPushButton("RESTART");
     QFont font;
     font.setPointSize(20);
-    _restartBtn->setMaximumWidth(250);
+    _restartBtn->setMaximumWidth(SIDE_PANEL_SIZE);
     _restartBtn->setMinimumHeight(50);
     _restartBtn->setFont(font);
 
     _vLayout->addWidget(_restartBtn);
 
     _openMapBtn = new QPushButton("Open map");
-    _openMapBtn->setMaximumWidth(250);
+    _openMapBtn->setMaximumWidth(SIDE_PANEL_SIZE);
 
     _vLayout->addWidget(_openMapBtn);
 
     _console = new QPlainTextEdit;
     _console->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
     _console->setTextInteractionFlags(Qt::NoTextInteraction);
-    _console->setMaximumWidth(250);
+    _console->setMaximumWidth(SIDE_PANEL_SIZE);
 
     _vLayout->addWidget(_console);
 
     _treeWidget = new QTreeWidget;
-    _treeWidget->setMaximumWidth(250);
+    _treeWidget->setMaximumWidth(SIDE_PANEL_SIZE);
     _treeWidget->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     _treeWidget->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
     QTreeWidgetItem *header = new QTreeWidgetItem();
     _treeWidget->setHeaderItem(header);
     header->setText(0, QString::fromLocal8Bit("Игрок"));
-    header->setText(1, QString::fromLocal8Bit("Кол-во убийств"));
-    header->setText(2, QString::fromLocal8Bit("Заспавнить"));
+    header->setText(1, QString::fromLocal8Bit("Убийства"));
+    header->setText(2, QString::fromLocal8Bit("Тип танка"));
+    header->setText(3, QString::fromLocal8Bit("Управление"));
+    header->setText(4, QString::fromLocal8Bit("Заспавнить"));
     header->setTextAlignment(0, Qt::AlignCenter);
     header->setTextAlignment(1, Qt::AlignCenter);
     header->setTextAlignment(2, Qt::AlignCenter);
+    header->setTextAlignment(3, Qt::AlignCenter);
+    header->setTextAlignment(4, Qt::AlignCenter);
     _treeWidget->setColumnWidth(0, 50);
-    _treeWidget->setColumnWidth(1, 100);
-    _treeWidget->setColumnWidth(2, 80);
+    _treeWidget->setColumnWidth(1, 65);
+    _treeWidget->setColumnWidth(2, 70);
+    _treeWidget->setColumnWidth(3, 120);
+    _treeWidget->setColumnWidth(4, 80);
 
     _vLayout->addWidget(_treeWidget);
 
@@ -103,27 +110,126 @@ public:
   void loadMap()
   {
     _fileName = QFileDialog::getOpenFileName(this, "Open map","./Resources/maps","XML files (*.xml)");
+    if (_fileName != nullptr)
+      restart();
+  }
+
+  QString controlsName(int controlDevice)
+  {
+    if (controlDevice == -2)
+      return QString("WASD + Space");
+    else if (controlDevice == -1)
+      return QString("Arrows + Num 0");
+    else
+      return QString("Joystick " + QString::number(controlDevice));
+  }
+
+  void changeControls(int player, int controlDevice)
+  {
+    // controlDevice = -2 is WASD + Space
+    // controlDevice = -1 is Arrows + Num 0
+    int swapControl = _tank[player]->_joyNum;
+
+    for (int i = 0; i < _playerNum; i++)
+    {
+      if (_tank[i]->_joyNum == controlDevice)
+      {
+        _tank[i]->_joyNum = swapControl;
+        QPushButton* btn = dynamic_cast<QPushButton*>(_treeWidget->itemWidget(_treeWidget->topLevelItem(i), 3));
+        btn->setText(controlsName(swapControl));
+        if (swapControl == -2)
+          _wasdTank = _tank[i];
+        else if (swapControl == -1)
+          _arrowsTank = _tank[i];
+      }
+      else if (swapControl == -2)
+        _wasdTank = nullptr;
+      else if (swapControl == -1)
+        _arrowsTank = nullptr;
+    }
+
+    _tank[player]->_joyNum = controlDevice;
+
+    if (controlDevice == -2)
+      _wasdTank = _tank[player];
+    else if (controlDevice == -1)
+      _arrowsTank = _tank[player];
   }
 
   void addPlayer()
   {
-    QTreeWidgetItem *item = new QTreeWidgetItem(_treeWidget);
-    int player = _playerNum;
-    item->setIcon(0, QIcon("./Resources/tank/tank" + QString::number(_playerNum % 13) + ".bmp"));
-    item->setText(1, QString::fromLocal8Bit("0"));
-    QPushButton* spawnBtn = new QPushButton("GO");
-    _treeWidget->setItemWidget(item, 2, spawnBtn);
-    connect(spawnBtn, &QPushButton::clicked, this, [this, player] { spawnPlayer(player); });
-    _playerNum++;
-    item->setTextAlignment(0, Qt::AlignCenter);
-    item->setTextAlignment(1, Qt::AlignCenter);
-    item->setTextAlignment(2, Qt::AlignCenter);
+    // нельзя добавить игроков больше чем методов ввода (в т.ч. с клавиатуры)
+    if (_playerNum - 2 < _numJoysticks)
+    {
+      int player = _playerNum;
+
+      int x = rand() % (MAP_SIZE[0] - 8) + 3;
+      int z = rand() % (MAP_SIZE[1] - 6) + 3;
+
+      _tank.push_back(new tank(x * 8, z * 8, std::to_string(player % 13), player - 2, &_tank, &_typeMap, &_tileMap, &_toDelete));
+      _tank.back()->setName(_scene->getName() + " - " + std::to_string(player) + " player tank");
+
+      QTreeWidgetItem *item = new QTreeWidgetItem(_treeWidget);
+
+      item->setIcon(0, QIcon("./Resources/tank/tank" + QString::number(_playerNum % 13) + ".bmp"));
+      item->setText(1, QString::fromLocal8Bit("0"));
+
+      QPushButton* tankTypeBtn = new QPushButton(QString::fromLocal8Bit("Легкий")); // тип танка
+      _treeWidget->setItemWidget(item, 2, tankTypeBtn);
+
+      QPushButton* controlsBtn = new QPushButton(controlsName(player - 2)); // управление
+      // по умолчанию танки 0 и 1 управляются с WASD и стрелок соответственно
+      if (player == 0)
+        _wasdTank = _tank.back();
+      if (player == 1)
+        _arrowsTank = _tank.back();
+
+      QMenu* controlsMenu = new QMenu;
+
+      // кнопка смены управления на WASD
+      QAction* act = new QAction;
+      connect(act, &QAction::triggered, controlsBtn, [controlsBtn, act] { controlsBtn->setText(act->text()); });
+      connect(act, &QAction::triggered, this, [this, player] { changeControls(player, -2); });
+      act->setText(QString::fromLocal8Bit("WASD + Space"));
+      controlsMenu->addAction(act);
+
+      // кнопка смены управления на стрелки
+      act = new QAction;
+      connect(act, &QAction::triggered, controlsBtn, [controlsBtn, act] { controlsBtn->setText(act->text()); });
+      connect(act, &QAction::triggered, this, [this, player] { changeControls(player, -1); });
+      act->setText(QString::fromLocal8Bit("Arrows + Num 0"));
+      controlsMenu->addAction(act);
+
+      // кнопки смены управления на любой из джойстиков
+      for (int i = 0; i < _numJoysticks; i++)
+      {
+        act = new QAction;
+        connect(act, &QAction::triggered, controlsBtn, [controlsBtn, act] { controlsBtn->setText(act->text()); });
+        connect(act, &QAction::triggered, this, [this, player, i] { changeControls(player, i); });
+        act->setText(QString::fromLocal8Bit("Joystick ") + QString::number(i));
+        controlsMenu->addAction(act);
+      }
+
+      controlsBtn->setMenu(controlsMenu);
+      _treeWidget->setItemWidget(item, 3, controlsBtn);
+
+      QPushButton* spawnBtn = new QPushButton("GO");
+      _treeWidget->setItemWidget(item, 4, spawnBtn);
+
+      connect(spawnBtn, &QPushButton::clicked, this, [this, player] { spawnPlayer(player); });
+      _playerNum++;
+      item->setTextAlignment(0, Qt::AlignCenter);
+      item->setTextAlignment(1, Qt::AlignCenter);
+      item->setTextAlignment(2, Qt::AlignCenter);
+      item->setTextAlignment(3, Qt::AlignCenter);
+      item->setTextAlignment(4, Qt::AlignCenter);
+    }
   }
 
   void spawnPlayer(const int player)
   {
-    int x = rand() % (MAP_SIZE[0] - 8) + 3;
-    int z = rand() % (MAP_SIZE[1] - 6) + 3;
+    int x = _tank[player]->_x/8;
+    int z = _tank[player]->_z/8;
 
     // если на месте спавна танка есть блоки, удаляем их
     std::map<osg::Vec2i, blockType>::const_iterator a;
@@ -149,18 +255,17 @@ public:
     }
 
     // добавляем танк
-    _tank.push_back(new tank(x * 8, z * 8, std::to_string(player % 13), player, &_tank, &_typeMap, &_tileMap, &_toDelete));
-    _scene->asGroup()->addChild(_tank.back());
-    _tank.back()->setName(_scene->getName() + " - " + std::to_string(player) + " player tank");
+    _scene->asGroup()->addChild(_tank[player]);
+    _tank[player]->enable();
 
     // при убистве счетчик будет обновляться
-    connect(_tank.back(), &tank::smbdyKilled, this, [this, player](int killCount) 
+    connect(_tank[player], &tank::smbdyKilled, this, [this, player](int killCount)
       { _treeWidget->topLevelItem(player)->setText(1, QString::number(killCount)); });
     // после уничтожения танк будет респавниться через какое-то время
-    connect(_tank.back(), &tank::enemyNeedRespawn, this, &ViewerWidget::spawnPlayer);
+    connect(_tank[player], &tank::enemyNeedRespawn, this, &ViewerWidget::spawnPlayer);
 
     // делаем кнопку спавна неактивной
-    _treeWidget->itemWidget(_treeWidget->topLevelItem(player), 2)->setEnabled(false);
+    _treeWidget->itemWidget(_treeWidget->topLevelItem(player), 4)->setEnabled(false);
   }
 
   void restart()
@@ -169,13 +274,21 @@ public:
     _tileMap.clear();
     _toDelete.clear();
     _tank.clear();
+
+    // отключаем все танки
+    for (int i = 0; i < _playerNum; i++)
+    {
+      _tank[i]->disable();
+    }
+
     _playerNum = 0;
+    
     // делаем кнопку спавна опять активной и обнуляем счетчик убийств
     for (int i = 0; i < _treeWidget->topLevelItemCount(); i++)
     {
       QTreeWidgetItem* tempItem = _treeWidget->topLevelItem(i);
       tempItem->setText(1, "0");
-      _treeWidget->itemWidget(tempItem, 2)->setEnabled(true);
+      _treeWidget->itemWidget(tempItem, 4)->setEnabled(true);
     }
 
     _scene = createScene();
@@ -234,7 +347,7 @@ public:
 
     _viewer->setSceneData(scene);
     //_viewer->addEventHandler(new osgViewer::StatsHandler);
-    //_viewer->addEventHandler(this);
+    _viewer->addEventHandler(this);
     _viewer->setCameraManipulator(new osgGA::TrackballManipulator);
     gw->setTouchEventsEnabled(true);
     return gw->getGLWidget();
@@ -257,135 +370,146 @@ public:
     return new osgQt::GraphicsWindowQt(traits.get());
   }
 
-  //bool handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter&)
-  //{
-  //  switch (ea.getEventType())
-  //  {
-  //  case(osgGA::GUIEventAdapter::KEYDOWN) :
-  //  {
-  //    switch (ea.getKey())
-  //    {
-  //    case(119) : // W
-  //    {
-  //      _pressedKeysP1[119] = true;
-  //      _p1Tank->moveTo(direction::UP);
-  //      break;
-  //    }
-  //    case(115) : // S
-  //    {
-  //      _pressedKeysP1[115] = true;
-  //      _p1Tank->moveTo(direction::DOWN);
-  //      break;
-  //    }
-  //    case(97) : // A
-  //    {
-  //      _pressedKeysP1[97] = true;
-  //      _p1Tank->moveTo(direction::LEFT);
-  //      break;
-  //    }
-  //    case(100) : // D
-  //    {
-  //      _pressedKeysP1[100] = true;
-  //      _p1Tank->moveTo(direction::RIGHT);
-  //      break;
-  //    }
-  //    case(32) : // SPACE
-  //    {
-  //      _p1Tank->shoot();
-  //      break;
-  //    }
-  //               ////////////////////////////////////////////////////////////
-  //    case(osgGA::GUIEventAdapter::KEY_Up) : // up
-  //    {
-  //      _pressedKeysP2[65362] = true;
-  //      _p2Tank->moveTo(direction::UP);
-  //      break;
-  //    }
-  //    case(osgGA::GUIEventAdapter::KEY_Down) : // down
-  //    {
-  //      _pressedKeysP2[65364] = true;
-  //      _p2Tank->moveTo(direction::DOWN);
-  //      break;
-  //    }
-  //    case(osgGA::GUIEventAdapter::KEY_Left) : // left
-  //    {
-  //      _pressedKeysP2[65361] = true;
-  //      _p2Tank->moveTo(direction::LEFT);
-  //      break;
-  //    }
-  //    case(osgGA::GUIEventAdapter::KEY_Right) : // right
-  //    {
-  //      _pressedKeysP2[65363] = true;
-  //      _p2Tank->moveTo(direction::RIGHT);
-  //      break;
-  //    }
-  //    case(osgGA::GUIEventAdapter::KEY_KP_Insert) : // num0
-  //    {
-  //      _p2Tank->shoot();
-  //      break;
-  //    }
-  //    }
-  //    return true;
-  //  }
-  //  case(osgGA::GUIEventAdapter::KEYUP) :
-  //  {
-  //    int key = ea.getKey();
-  //    switch (key)
-  //    {
-  //    case(119) : // W
-  //    case(115) : // S
-  //    case(97) : // A
-  //    case(100) : // D
-  //    {
-  //      _pressedKeysP1[key] = false;
-  //      // если это была единственная нажатая клавиша то танк останавливается
-  //      if (_pressedKeysP1[119])
-  //        _p1Tank->moveTo(direction::UP);
-  //      else if (_pressedKeysP1[115])
-  //        _p1Tank->moveTo(direction::DOWN);
-  //      else if (_pressedKeysP1[97])
-  //        _p1Tank->moveTo(direction::LEFT);
-  //      else if (_pressedKeysP1[100])
-  //        _p1Tank->moveTo(direction::RIGHT);
-  //      else
-  //        _p1Tank->stop();
-  //      break;
-  //    }
-  //    case(65362) : // up
-  //    case(65364) : // down
-  //    case(65361) : // left
-  //    case(65363) : // right
-  //    {
-  //      _pressedKeysP2[key] = false;
-  //      // если это была единственная нажатая клавиша то танк останавливается
-  //      if (_pressedKeysP2[65362])
-  //        _p2Tank->moveTo(direction::UP);
-  //      else if (_pressedKeysP2[65364])
-  //        _p2Tank->moveTo(direction::DOWN);
-  //      else if (_pressedKeysP2[65361])
-  //        _p2Tank->moveTo(direction::LEFT);
-  //      else if (_pressedKeysP2[65363])
-  //        _p2Tank->moveTo(direction::RIGHT);
-  //      else
-  //        _p2Tank->stop();
-  //      break;
-  //    }
-  //    }
-  //    return true;
-  //  }
-  //  default:
-  //    return false;
-  //  }
-  //}
+  bool handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter&)
+  {
+    switch (ea.getEventType())
+    {
+    case(osgGA::GUIEventAdapter::KEYDOWN) :
+    {
+      if (_wasdTank != nullptr)
+        switch (ea.getKey())
+        {
+          case(119) : // W
+          {
+            _pressedKeysP1[119] = true;
+            _wasdTank->moveTo(direction::UP);
+            break;
+          }
+          case(115) : // S
+          {
+            _pressedKeysP1[115] = true;
+            _wasdTank->moveTo(direction::DOWN);
+            break;
+          }
+          case(97) : // A
+          {
+            _pressedKeysP1[97] = true;
+            _wasdTank->moveTo(direction::LEFT);
+            break;
+          }
+          case(100) : // D
+          {
+            _pressedKeysP1[100] = true;
+            _wasdTank->moveTo(direction::RIGHT);
+            break;
+          }
+          case(32) : // SPACE
+          {
+            _wasdTank->shoot();
+            break;
+          }
+        }
+                 ////////////////////////////////////////////////////////////
+      if (_arrowsTank != nullptr)
+        switch (ea.getKey())
+        {
+          case(osgGA::GUIEventAdapter::KEY_Up) : // up
+          {
+            _pressedKeysP2[65362] = true;
+            _arrowsTank->moveTo(direction::UP);
+            break;
+          }
+          case(osgGA::GUIEventAdapter::KEY_Down) : // down
+          {
+            _pressedKeysP2[65364] = true;
+            _arrowsTank->moveTo(direction::DOWN);
+            break;
+          }
+          case(osgGA::GUIEventAdapter::KEY_Left) : // left
+          {
+            _pressedKeysP2[65361] = true;
+            _arrowsTank->moveTo(direction::LEFT);
+            break;
+          }
+          case(osgGA::GUIEventAdapter::KEY_Right) : // right
+          {
+            _pressedKeysP2[65363] = true;
+            _arrowsTank->moveTo(direction::RIGHT);
+            break;
+          }
+          case(osgGA::GUIEventAdapter::KEY_0) : // num0
+          {
+            _arrowsTank->shoot(); 
+            break;
+          }
+        }
+      return true;
+    }
+    case(osgGA::GUIEventAdapter::KEYUP) :
+    {
+      int key = ea.getKey();
+      if (_wasdTank != nullptr)
+        switch (key)
+        {
+          case(119) : // W
+          case(115) : // S
+          case(97) : // A
+          case(100) : // D
+          {
+            _pressedKeysP1[key] = false;
+            // если это была единственная нажатая клавиша то танк останавливается
+            if (_pressedKeysP1[119])
+              _wasdTank->moveTo(direction::UP);
+            else if (_pressedKeysP1[115])
+              _wasdTank->moveTo(direction::DOWN);
+            else if (_pressedKeysP1[97])
+              _wasdTank->moveTo(direction::LEFT);
+            else if (_pressedKeysP1[100])
+              _wasdTank->moveTo(direction::RIGHT);
+            else
+              _wasdTank->stop();
+            break;
+          }
+        }
+      if (_arrowsTank != nullptr)
+        switch (key)
+        {
+          case(65362) : // up
+          case(65364) : // down
+          case(65361) : // left
+          case(65363) : // right
+          {
+            _pressedKeysP2[key] = false;
+            // если это была единственная нажатая клавиша то танк останавливается
+            if (_pressedKeysP2[65362])
+              _arrowsTank->moveTo(direction::UP);
+            else if (_pressedKeysP2[65364])
+              _arrowsTank->moveTo(direction::DOWN);
+            else if (_pressedKeysP2[65361])
+              _arrowsTank->moveTo(direction::LEFT);
+            else if (_pressedKeysP2[65363])
+              _arrowsTank->moveTo(direction::RIGHT);
+            else
+              _arrowsTank->stop();
+            break;
+          }
+        }
+      return true;
+    }
+    default:
+      return false;
+    }
+  }
 
   void testSDLJoystick()
   {
     // Initialize the joystick subsystem
     SDL_InitSubSystem(SDL_INIT_JOYSTICK);
+    _numJoysticks = SDL_NumJoysticks();
 
     // Check for joystick
-    _console->insertPlainText(QString::fromLocal8Bit("Найдено ") + QString::number(SDL_NumJoysticks()) + QString::fromLocal8Bit(" джойстиков:\n\n"));
-    for (int joyNum = 0; joyNum < SDL_NumJoysticks(); joyNum++)
+    _console->insertPlainText(QString::fromLocal8Bit("Найдено ") + QString::number(_numJoysticks) + QString::fromLocal8Bit(" джойстиков:\n\n"));
+    for (int joyNum = 0; joyNum < _numJoysticks; joyNum++)
     {
       _joy = SDL_JoystickOpen(joyNum);
       if (_joy)
@@ -399,7 +523,7 @@ public:
           );
       }
     }
-    if (SDL_NumJoysticks() == 0)
+    if (_numJoysticks == 0)
       _console->insertPlainText(QString::fromLocal8Bit("Не найден ни один джойстик\n"));
   }
 
@@ -415,6 +539,8 @@ public:
 
     for (auto it = _tank.cbegin(); it != _tank.end(); ++it)
     {
+      if ((*it)->_joyNum < 0)
+        continue;
       (*it)->stop();
 
       _joy = SDL_JoystickOpen((*it)->_joyNum);
@@ -485,10 +611,13 @@ protected:
   QPushButton* _addPlayerBtn;
   QPushButton* _openMapBtn;
   QPlainTextEdit* _console;
+  int _numJoysticks;
   QString _fileName;
-  std::list<osg::ref_ptr<tank>> _tank;
-  //std::map<int, bool> _pressedKeysP1; // для игры с клавиатуры
-  //std::map<int, bool> _pressedKeysP2;
+  std::vector<osg::ref_ptr<tank>> _tank;
+  tank* _wasdTank = nullptr;
+  tank* _arrowsTank = nullptr;
+  std::map<int, bool> _pressedKeysP1; // для игры с клавиатуры
+  std::map<int, bool> _pressedKeysP2;
   osg::ref_ptr<osgViewer::Viewer> _viewer;
   osg::ref_ptr<osg::Node> _scene;
   int _playerNum = 0;
@@ -529,7 +658,7 @@ int main(int argc, char** argv)
 
   QApplication app(argc, argv);
   ViewerWidget* viewWidget = new ViewerWidget(0, Qt::Widget, threadingModel);
-  viewWidget->setGeometry(100, 100, 1080, 700);
+  viewWidget->setGeometry(100, 100, 800 + 30 + SIDE_PANEL_SIZE, 700);
   viewWidget->setWindowTitle("World of Tanks 2");
   viewWidget->show();
   return app.exec();

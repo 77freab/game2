@@ -3,16 +3,15 @@
 const int SHOOT_TIMEOUT = 300; // задержка между выстрелами в мс
 
 tank::tank(int x, int z, std::string texNum, int joyNum,
-  std::list<osg::ref_ptr<tank>>* tank,
+  std::vector<osg::ref_ptr<tank>>* tank,
   std::map<osg::Vec2i, blockType>* typeMap,
   std::map<osg::Vec2i, tile*>* tileMap,
   std::list<osg::Node*>* toDelete)
-  : _clb(new tankCallback), _timer(new QDeadlineTimer(SHOOT_TIMEOUT)),
-  _rMt(new MatrixTransform), _typeMap(typeMap), _tileMap(tileMap), _toDelete(toDelete),
+  : _timer(new QDeadlineTimer(SHOOT_TIMEOUT)), _rMt(new MatrixTransform),
+  _typeMap(typeMap), _tileMap(tileMap), _toDelete(toDelete),
   _tank(tank), _joyNum(joyNum), _x0(x), _z0(z), _x(x), _z(z)
 {
   this->setDataVariance(osg::Object::DYNAMIC);
-  this->setUpdateCallback(_clb);
 
   osg::Matrix m; // перемещаем в точку спавна
   m.makeTranslate(_x, 0, _z);
@@ -113,13 +112,13 @@ void tank::move()
   else
     bGo = true;
 
-  // если небыло коллизий с блоками определяет коллизии с другими танками
+  // если не было коллизий с блоками определяет коллизии с другими танками
   if (aGo && bGo)
   {
     // цикл по всем танкам
     for (auto it = _tank->cbegin(); it != _tank->end(); ++it)
     {
-      if ((*it).get() != this)
+      if ((*it).get() != this && (*it)->_enabled)
       {
         if (cpt1[0] > (*it)->_x - 8 && cpt1[0] < (*it)->_x + 8 &&
           cpt1[1] > (*it)->_z - 8 && cpt1[1] < (*it)->_z + 8)
@@ -210,6 +209,21 @@ void tank::move()
   this->setMatrix(mT);
 }
 
+void tank::enable()
+{
+  _clb = new tankCallback;
+  this->setUpdateCallback(_clb);
+  _timer->setRemainingTime(SHOOT_TIMEOUT);
+  _enabled = true;
+}
+
+void tank::disable()
+{
+  this->removeUpdateCallback(_clb); // чтоб не мог двигаться
+  _timer->setRemainingTime(-1); // чтоб не мог стрелять
+  _enabled = false; // чтоб коллизии для него не расчитывались
+}
+
 void tank::shoot()
 {
   // обеспечиваем задержку при стрельбе
@@ -227,7 +241,7 @@ void tank::shoot()
 
 projectile::projectile(int x, int y, int z, direction dir, 
   std::string texPath, tank* parentTank, 
-  std::list<osg::ref_ptr<tank>>* tank,
+  std::vector<osg::ref_ptr<tank>>* tank,
   std::map<osg::Vec2i, blockType>* typeMap,
   std::map<osg::Vec2i, tile*>* tileMap,
   std::list<osg::Node*>* toDelete)
@@ -339,7 +353,7 @@ void projectile::move()
 
   for (auto it = _tank->cbegin(); it != _tank->end(); ++it)
   {
-    if ((*it).get() != _parentTank)
+    if ((*it).get() != _parentTank && (*it)->_enabled)
       if (_z + 6 >= (*it)->_z - 8 && _z + 2 <= (*it)->_z + 8)
         if (_x + 6 >= (*it)->_x - 8 && _x + 2 <= (*it)->_x + 8) // есть попадание
         {
@@ -349,13 +363,12 @@ void projectile::move()
           bang* bng = new bang((*it)->_x, 4, (*it)->_z, _toDelete);
           _parentTank->getParent(0)->addChild(bng);
           // уничтожаем танк
-          (*it)->_timer->setRemainingTime(-1); // чтоб не мог стрелять
-          (*it)->removeUpdateCallback((*it)->_clb); // чтоб не мог ездить
-          _toDelete->push_back((*it)); // ставим в очередь на удаление со сцены
+          (*it)->disable(); // отключаем его
+          //_toDelete->push_back((*it)); // ставим в очередь на удаление со сцены
           int playerNum = (*it)->_joyNum; // запонимаем номер уничтоженного игрока чтобы его зареспавнить
-          it = _tank->erase(it); // убираем из списка всех танков
+          //it = _tank->erase(it); // убираем из списка всех танков
           emit _parentTank->smbdyKilled(++_parentTank->_killCount); // увеличиваем число убийств
-          // через какое-то время противнек зареспанится
+          // через какое-то время противнек зареспавнится
           QTimer::singleShot(3000, _parentTank, [this, playerNum] { emit _parentTank->enemyNeedRespawn(playerNum); });
           if (it == _tank->end())
             break;
@@ -436,10 +449,6 @@ void bang::makeBang()
     _texCoord->push_back(osg::Vec2(1./3, 1));
 
     _geom->setTexCoordArray(0, _texCoord.get(), osg::Array::Binding::BIND_PER_VERTEX);
-
-    //osg::StateSet* state = _geom->getOrCreateStateSet();
-    //state->setTextureAttributeAndModes(0, _texture);
-    //state->setRenderingHint(osg::StateSet::TRANSPARENT_BIN);
   }
   if (_roughTimer == temp*2)
   {
@@ -451,10 +460,6 @@ void bang::makeBang()
     _texCoord->push_back(osg::Vec2(   0, 1));
 
     _geom->setTexCoordArray(0, _texCoord.get(), osg::Array::Binding::BIND_PER_VERTEX);
-
-    //osg::StateSet* state = _geom->getOrCreateStateSet();
-    //state->setTextureAttributeAndModes(0, _texture);
-    //state->setRenderingHint(osg::StateSet::TRANSPARENT_BIN);
   }
   if (_roughTimer == temp*3)
   {

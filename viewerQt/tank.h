@@ -61,7 +61,7 @@ class tank : public QObject, public osg::MatrixTransform
   Q_OBJECT
 public:
   tank(int x, int z, std::string texNum, int joyNum,
-    std::list<osg::ref_ptr<tank>>* tank,
+    std::vector<osg::ref_ptr<tank>>* tank,
     std::map<osg::Vec2i, blockType>* typeMap,
     std::map<osg::Vec2i, tile*>* tileMap,
     std::list<osg::Node*>* toDelete);
@@ -70,24 +70,27 @@ public:
   void stop();
   void shoot();
   bool _go = false;
-  osg::ref_ptr<projectile> _projectile = nullptr;
+  void enable();
+  void disable();
+  osg::ref_ptr<projectile> _projectile;
   int _x;
   int _z;
-  osg::ref_ptr<tankCallback> _clb;
   QDeadlineTimer* _timer;
   int _joyNum;
   int _killCount = 0;
+  bool _enabled = false;
 signals:
   void smbdyKilled(int killCount);
   void enemyNeedRespawn(int player);
 private:
+  osg::ref_ptr<tankCallback> _clb;
   std::map<osg::Vec2i, blockType>* _typeMap;
   std::map<osg::Vec2i, tile*>* _tileMap;
   std::list<osg::Node*>* _toDelete;
   osg::Vec2i _collisionPt1;
   osg::Vec2i _collisionPt2;
   osg::ref_ptr<osg::MatrixTransform> _rMt;
-  std::list<osg::ref_ptr<tank>>* _tank;
+  std::vector<osg::ref_ptr<tank>>* _tank;
   const int _x0;
   const int _z0;
   direction _goDir = direction::UP;
@@ -100,7 +103,7 @@ class projectile : public tile
 public:
   projectile(int x, int y, int z, direction,
     std::string texPath, tank* parentTank,
-    std::list<osg::ref_ptr<tank>>* tank,
+    std::vector<osg::ref_ptr<tank>>* tank,
     std::map<osg::Vec2i, blockType>* typeMap,
     std::map<osg::Vec2i, tile*>* tileMap,
     std::list<osg::Node*>* toDelete);
@@ -115,7 +118,7 @@ private:
   osg::Vec2i _collisionPt1;
   osg::Vec2i _collisionPt2;
   tank* _parentTank;
-  std::list<osg::ref_ptr<tank>>* _tank;
+  std::vector<osg::ref_ptr<tank>>* _tank;
   int _x;
   int _z;
   osg::ref_ptr<projectileCallback> _clb;
