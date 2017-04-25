@@ -38,9 +38,9 @@ public:
     _hLayout = new QHBoxLayout;
 
     _scene = createScene();
-    _widget = addViewWidget(createGraphicsWindow(0, 0, 800, 700), _scene.get());
+    _viewerWidget = addViewWidget(createGraphicsWindow(0, 0, 800, 700), _scene.get());
     
-    _hLayout->addWidget(_widget);
+    _hLayout->addWidget(_viewerWidget);
 
     _vLayout = new QVBoxLayout;
 
@@ -65,12 +65,12 @@ public:
 
     _vLayout->addWidget(_console);
 
-    _treeWidget = new QTreeWidget;
-    _treeWidget->setMaximumWidth(SIDE_PANEL_SIZE);
-    _treeWidget->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    _treeWidget->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
+    _playersList = new QTreeWidget;
+    _playersList->setMaximumWidth(SIDE_PANEL_SIZE);
+    _playersList->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    _playersList->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
     QTreeWidgetItem *header = new QTreeWidgetItem();
-    _treeWidget->setHeaderItem(header);
+    _playersList->setHeaderItem(header);
     header->setText(0, QString::fromLocal8Bit("»грок"));
     header->setText(1, QString::fromLocal8Bit("”бийства"));
     header->setText(2, QString::fromLocal8Bit("“ип танка"));
@@ -81,13 +81,13 @@ public:
     header->setTextAlignment(2, Qt::AlignCenter);
     header->setTextAlignment(3, Qt::AlignCenter);
     header->setTextAlignment(4, Qt::AlignCenter);
-    _treeWidget->setColumnWidth(0, 50);
-    _treeWidget->setColumnWidth(1, 65);
-    _treeWidget->setColumnWidth(2, 70);
-    _treeWidget->setColumnWidth(3, 120);
-    _treeWidget->setColumnWidth(4, 80);
+    _playersList->setColumnWidth(0, 50);
+    _playersList->setColumnWidth(1, 65);
+    _playersList->setColumnWidth(2, 70);
+    _playersList->setColumnWidth(3, 120);
+    _playersList->setColumnWidth(4, 80);
 
-    _vLayout->addWidget(_treeWidget);
+    _vLayout->addWidget(_playersList);
 
     _addPlayerBtn = new QPushButton;
     _addPlayerBtn->setText(QString::fromLocal8Bit("ƒобавить игрока"));
@@ -103,8 +103,8 @@ public:
     connect(_addPlayerBtn, &QPushButton::clicked, this, &ViewerWidget::addPlayer);
     connect(_restartBtn, &QPushButton::clicked, this, &ViewerWidget::restart);
     connect(_openMapBtn, &QPushButton::clicked, this, &ViewerWidget::loadMap);
-    connect(&_timer, SIGNAL(timeout()), this, SLOT(update()));
-    _timer.start(10);
+    connect(&_viewerUpdateTimer, SIGNAL(timeout()), this, SLOT(update()));
+    _viewerUpdateTimer.start(10);
   }
 
   void loadMap()
@@ -135,7 +135,7 @@ public:
       if (_tank[i]->_joyNum == controlDevice)
       {
         _tank[i]->_joyNum = swapControl;
-        QPushButton* btn = dynamic_cast<QPushButton*>(_treeWidget->itemWidget(_treeWidget->topLevelItem(i), 3));
+        QPushButton* btn = dynamic_cast<QPushButton*>(_playersList->itemWidget(_playersList->topLevelItem(i), 3));
         btn->setText(controlsName(swapControl));
         if (swapControl == -2)
           _wasdTank = _tank[i];
@@ -163,19 +163,19 @@ public:
     {
       int player = _playerNum;
 
-      int x = rand() % (MAP_SIZE[0] - 8) + 3;
-      int z = rand() % (MAP_SIZE[1] - 6) + 3;
+      int x = rand() % (mapSize[0] - 8) + 3;
+      int z = rand() % (mapSize[1] - 6) + 3;
 
       _tank.push_back(new tank(x * 8, z * 8, std::to_string(player % 13), player - 2, &_tank, &_typeMap, &_tileMap, &_toDelete));
       _tank.back()->setName(_scene->getName() + " - " + std::to_string(player) + " player tank");
 
-      QTreeWidgetItem *item = new QTreeWidgetItem(_treeWidget);
+      QTreeWidgetItem *item = new QTreeWidgetItem(_playersList);
 
       item->setIcon(0, QIcon("./Resources/tank/tank" + QString::number(_playerNum % 13) + ".bmp"));
       item->setText(1, QString::fromLocal8Bit("0"));
 
       QPushButton* tankTypeBtn = new QPushButton(QString::fromLocal8Bit("Ћегкий")); // тип танка
-      _treeWidget->setItemWidget(item, 2, tankTypeBtn);
+      _playersList->setItemWidget(item, 2, tankTypeBtn);
 
       QPushButton* controlsBtn = new QPushButton(controlsName(player - 2)); // управление
       // по умолчанию танки 0 и 1 управл€ютс€ с WASD и стрелок соответственно
@@ -211,10 +211,10 @@ public:
       }
 
       controlsBtn->setMenu(controlsMenu);
-      _treeWidget->setItemWidget(item, 3, controlsBtn);
+      _playersList->setItemWidget(item, 3, controlsBtn);
 
       QPushButton* spawnBtn = new QPushButton("GO");
-      _treeWidget->setItemWidget(item, 4, spawnBtn);
+      _playersList->setItemWidget(item, 4, spawnBtn);
 
       connect(spawnBtn, &QPushButton::clicked, this, [this, player] { spawnPlayer(player); });
       _playerNum++;
@@ -226,11 +226,8 @@ public:
     }
   }
 
-  void spawnPlayer(const int player)
+  void clearPlaceForTank(int x, int z)
   {
-    int x = _tank[player]->_x/8;
-    int z = _tank[player]->_z/8;
-
     // если на месте спавна танка есть блоки, удал€ем их
     std::map<osg::Vec2i, blockType>::const_iterator a;
     if ((a = _typeMap.find({ x - 1, z })) != _typeMap.end())
@@ -253,6 +250,11 @@ public:
       _toDelete.push_back(_tileMap[{ x, z }]);
       _typeMap.erase(a);
     }
+  }
+
+  void spawnPlayer(const int player)
+  {
+    clearPlaceForTank(_tank[player]->_x / 8, _tank[player]->_z / 8);
 
     // добавл€ем танк
     _scene->asGroup()->addChild(_tank[player]);
@@ -260,12 +262,12 @@ public:
 
     // при убистве счетчик будет обновл€тьс€
     connect(_tank[player], &tank::smbdyKilled, this, [this, player](int killCount)
-      { _treeWidget->topLevelItem(player)->setText(1, QString::number(killCount)); });
+      { _playersList->topLevelItem(player)->setText(1, QString::number(killCount)); });
     // после уничтожени€ танк будет респавнитьс€ через какое-то врем€
     connect(_tank[player], &tank::enemyNeedRespawn, this, &ViewerWidget::spawnPlayer);
 
     // делаем кнопку спавна неактивной
-    _treeWidget->itemWidget(_treeWidget->topLevelItem(player), 4)->setEnabled(false);
+    _playersList->itemWidget(_playersList->topLevelItem(player), 4)->setEnabled(false);
   }
 
   void restart()
@@ -277,24 +279,22 @@ public:
 
     // отключаем все танки
     for (int i = 0; i < _playerNum; i++)
-    {
       _tank[i]->disable();
-    }
 
     _playerNum = 0;
     
     // делаем кнопку спавна оп€ть активной и обнул€ем счетчик убийств
-    for (int i = 0; i < _treeWidget->topLevelItemCount(); i++)
+    for (int i = 0; i < _playersList->topLevelItemCount(); i++)
     {
-      QTreeWidgetItem* tempItem = _treeWidget->topLevelItem(i);
+      QTreeWidgetItem* tempItem = _playersList->topLevelItem(i);
       tempItem->setText(1, "0");
-      _treeWidget->itemWidget(tempItem, 4)->setEnabled(true);
+      _playersList->itemWidget(tempItem, 4)->setEnabled(true);
     }
 
     _scene = createScene();
-    osgQt::GLWidget* widget = addViewWidget(createGraphicsWindow(0, 0, 800, 700), _scene.get());;
-    _hLayout->replaceWidget(_widget, widget);
-    _widget = widget;
+    osgQt::GLWidget* newViewerWidget = addViewWidget(createGraphicsWindow(0, 0, 800, 700), _scene.get());;
+    _hLayout->replaceWidget(_viewerWidget, newViewerWidget);
+    _viewerWidget = newViewerWidget;
   }
 
   osg::ref_ptr<osg::Node> createScene()
@@ -304,28 +304,19 @@ public:
     osg::Vec2i createMap(osg::ref_ptr<osg::Group> scene,
       std::map<osg::Vec2i, blockType>& typeMap,
       std::map<osg::Vec2i, tile*>& tileMap, QString fileName);
-    MAP_SIZE = createMap(scene, _typeMap, _tileMap, _fileName);
+    mapSize = createMap(scene, _typeMap, _tileMap, _fileName);
 
     osgUtil::Optimizer opt;
     opt.optimize(scene,
-      osgUtil::Optimizer::FLATTEN_STATIC_TRANSFORMS |
-      osgUtil::Optimizer::REMOVE_REDUNDANT_NODES |
-      osgUtil::Optimizer::REMOVE_LOADED_PROXY_NODES |
-      osgUtil::Optimizer::COMBINE_ADJACENT_LODS |
-      osgUtil::Optimizer::SHARE_DUPLICATE_STATE |
-      osgUtil::Optimizer::MERGE_GEOMETRY |
-      osgUtil::Optimizer::CHECK_GEOMETRY |
-      osgUtil::Optimizer::MAKE_FAST_GEOMETRY |
+      osgUtil::Optimizer::DEFAULT_OPTIMIZATIONS |
+      osgUtil::Optimizer::FLATTEN_STATIC_TRANSFORMS_DUPLICATING_SHARED_SUBGRAPHS |
       osgUtil::Optimizer::SPATIALIZE_GROUPS |
       osgUtil::Optimizer::COPY_SHARED_NODES |
       //osgUtil::Optimizer::TRISTRIP_GEOMETRY | // раздел€ет на triangle strips
       osgUtil::Optimizer::TESSELLATE_GEOMETRY |
-      osgUtil::Optimizer::OPTIMIZE_TEXTURE_SETTINGS |
       osgUtil::Optimizer::MERGE_GEODES |
       osgUtil::Optimizer::FLATTEN_BILLBOARDS |
       //osgUtil::Optimizer::TEXTURE_ATLAS_BUILDER | // текстуры танков артефачат
-      osgUtil::Optimizer::STATIC_OBJECT_DETECTION |
-      osgUtil::Optimizer::FLATTEN_STATIC_TRANSFORMS_DUPLICATING_SHARED_SUBGRAPHS |
       //osgUtil::Optimizer::INDEX_MESH | // раздел€ет на triangles
       osgUtil::Optimizer::VERTEX_POSTTRANSFORM |
       osgUtil::Optimizer::VERTEX_PRETRANSFORM
@@ -346,7 +337,7 @@ public:
     camera->setProjectionMatrixAsPerspective(28.0f, 32./28, 1.0f, 10000.0f);
 
     _viewer->setSceneData(scene);
-    //_viewer->addEventHandler(new osgViewer::StatsHandler);
+    //_viewer->addEventHandler(new osgViewer::StatsHandler); // ‘ѕ— и прочее
     _viewer->addEventHandler(this);
     _viewer->setCameraManipulator(new osgGA::TrackballManipulator);
     gw->setTouchEventsEnabled(true);
@@ -381,25 +372,25 @@ public:
         {
           case(119) : // W
           {
-            _pressedKeysP1[119] = true;
+            _pressedKeys[119] = true;
             _wasdTank->moveTo(direction::UP);
             break;
           }
           case(115) : // S
           {
-            _pressedKeysP1[115] = true;
+            _pressedKeys[115] = true;
             _wasdTank->moveTo(direction::DOWN);
             break;
           }
           case(97) : // A
           {
-            _pressedKeysP1[97] = true;
+            _pressedKeys[97] = true;
             _wasdTank->moveTo(direction::LEFT);
             break;
           }
           case(100) : // D
           {
-            _pressedKeysP1[100] = true;
+            _pressedKeys[100] = true;
             _wasdTank->moveTo(direction::RIGHT);
             break;
           }
@@ -415,25 +406,25 @@ public:
         {
           case(osgGA::GUIEventAdapter::KEY_Up) : // up
           {
-            _pressedKeysP2[65362] = true;
+            _pressedKeys[65362] = true;
             _arrowsTank->moveTo(direction::UP);
             break;
           }
           case(osgGA::GUIEventAdapter::KEY_Down) : // down
           {
-            _pressedKeysP2[65364] = true;
+            _pressedKeys[65364] = true;
             _arrowsTank->moveTo(direction::DOWN);
             break;
           }
           case(osgGA::GUIEventAdapter::KEY_Left) : // left
           {
-            _pressedKeysP2[65361] = true;
+            _pressedKeys[65361] = true;
             _arrowsTank->moveTo(direction::LEFT);
             break;
           }
           case(osgGA::GUIEventAdapter::KEY_Right) : // right
           {
-            _pressedKeysP2[65363] = true;
+            _pressedKeys[65363] = true;
             _arrowsTank->moveTo(direction::RIGHT);
             break;
           }
@@ -456,15 +447,15 @@ public:
           case(97) : // A
           case(100) : // D
           {
-            _pressedKeysP1[key] = false;
+            _pressedKeys[key] = false;
             // если это была единственна€ нажата€ клавиша то танк останавливаетс€
-            if (_pressedKeysP1[119])
+            if (_pressedKeys[119])
               _wasdTank->moveTo(direction::UP);
-            else if (_pressedKeysP1[115])
+            else if (_pressedKeys[115])
               _wasdTank->moveTo(direction::DOWN);
-            else if (_pressedKeysP1[97])
+            else if (_pressedKeys[97])
               _wasdTank->moveTo(direction::LEFT);
-            else if (_pressedKeysP1[100])
+            else if (_pressedKeys[100])
               _wasdTank->moveTo(direction::RIGHT);
             else
               _wasdTank->stop();
@@ -479,15 +470,15 @@ public:
           case(65361) : // left
           case(65363) : // right
           {
-            _pressedKeysP2[key] = false;
+            _pressedKeys[key] = false;
             // если это была единственна€ нажата€ клавиша то танк останавливаетс€
-            if (_pressedKeysP2[65362])
+            if (_pressedKeys[65362])
               _arrowsTank->moveTo(direction::UP);
-            else if (_pressedKeysP2[65364])
+            else if (_pressedKeys[65364])
               _arrowsTank->moveTo(direction::DOWN);
-            else if (_pressedKeysP2[65361])
+            else if (_pressedKeys[65361])
               _arrowsTank->moveTo(direction::LEFT);
-            else if (_pressedKeysP2[65363])
+            else if (_pressedKeys[65363])
               _arrowsTank->moveTo(direction::RIGHT);
             else
               _arrowsTank->stop();
@@ -527,7 +518,7 @@ public:
       _console->insertPlainText(QString::fromLocal8Bit("Ќе найден ни один джойстик\n"));
   }
 
-  virtual void paintEvent(QPaintEvent* event)
+  virtual void paintEvent(QPaintEvent* event) override
   {
     _viewer->frame();
 
@@ -537,6 +528,11 @@ public:
       _toDelete.pop_front();
     }
 
+    int x, z;
+    direction _up, _down, _left, _right;
+    int _hAxis, _vAxis;
+    bool _startBtn, _fireBtn;
+
     for (auto it = _tank.cbegin(); it != _tank.end(); ++it)
     {
       if ((*it)->_joyNum < 0)
@@ -545,31 +541,32 @@ public:
 
       _joy = SDL_JoystickOpen((*it)->_joyNum);
 
-      _x = _viewer->getCamera()->getViewMatrix()(3, 0);
-      _z = _viewer->getCamera()->getViewMatrix()(3, 1);
+      // расположение камеры в пространстве по ос€м x и z
+      x = _viewer->getCamera()->getViewMatrix()(3, 0);
+      z = _viewer->getCamera()->getViewMatrix()(3, 1);
 
-      if (_x < 0 && _z < 0)
+      if (x < 0 && z < 0)
       {
         _up = direction::UP;
         _down = direction::DOWN;
         _left = direction::LEFT;
         _right = direction::RIGHT;
       }
-      if (_x > 0 && _z < 0)
+      if (x > 0 && z < 0)
       {
         _up = direction::RIGHT;
         _down = direction::LEFT;
         _left = direction::UP;
         _right = direction::DOWN;
       }
-      if (_x > 0 && _z > 0)
+      if (x > 0 && z > 0)
       {
         _up = direction::DOWN;
         _down = direction::UP;
         _left = direction::RIGHT;
         _right = direction::LEFT;
       }
-      if (_x < 0 && _z > 0)
+      if (x < 0 && z > 0)
       {
         _up = direction::LEFT;
         _down = direction::RIGHT;
@@ -601,37 +598,33 @@ public:
     }
   }
 
-protected:
-  QTimer _timer;
-  osgQt::GLWidget* _widget;
-  QHBoxLayout* _hLayout;
-  QVBoxLayout* _vLayout;
-  QTreeWidget* _treeWidget;
+private:
+  QTimer _viewerUpdateTimer;
+  osgQt::GLWidget* _viewerWidget;
+  QHBoxLayout* _hLayout; // размещает вьювер + панель управлени€
+  QVBoxLayout* _vLayout; // размещает компоненты панели управлени€
+  QTreeWidget* _playersList;
   QPushButton* _restartBtn;
   QPushButton* _addPlayerBtn;
   QPushButton* _openMapBtn;
   QPlainTextEdit* _console;
-  int _numJoysticks;
-  QString _fileName;
-  std::vector<osg::ref_ptr<tank>> _tank;
-  tank* _wasdTank = nullptr;
-  tank* _arrowsTank = nullptr;
-  std::map<int, bool> _pressedKeysP1; // дл€ игры с клавиатуры
-  std::map<int, bool> _pressedKeysP2;
-  osg::ref_ptr<osgViewer::Viewer> _viewer;
+
   osg::ref_ptr<osg::Node> _scene;
-  int _playerNum = 0;
-  osg::Vec2i MAP_SIZE;
+  osg::ref_ptr<osgViewer::Viewer> _viewer;
+  osg::Vec2i mapSize; // размер карты
+  QString _fileName; // строка дл€ имени файла с картой
 
+  int _numJoysticks; // кол-во подключенных джойстиков
+  tank* _wasdTank = nullptr; // ссылка на танк управл€емый WASD
+  tank* _arrowsTank = nullptr; // ссылка на танк управл€емый стрелками
+  std::map<int, bool> _pressedKeys; // определ€ет зажаты ли клавиши клавиатуры в текущий момент
+  int _playerNum = 0; // текущее кол-во игроков
   SDL_Joystick* _joy;
-  int _hAxis, _vAxis;
-  bool _startBtn, _fireBtn;
-  direction _up, _down, _left, _right;
-  int _x, _z;
 
-  std::map<osg::Vec2i, blockType> _typeMap;
-  std::map<osg::Vec2i, tile*> _tileMap;
-  std::list<osg::Node*> _toDelete;
+  std::vector<osg::ref_ptr<tank>> _tank; // вектор содержащий все танки
+  std::list<osg::Node*> _toDelete; // очередь на удаление
+  std::map<osg::Vec2i, blockType> _typeMap; // список координат и типов тайлов расположенных по эти координатам
+  std::map<osg::Vec2i, tile*> _tileMap; // список координат и ссылок на сами тайлы расположенные по этим координатам
 };
 
 int main(int argc, char** argv)
