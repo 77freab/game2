@@ -364,12 +364,13 @@ void projectile::move()
           _parentTank->getParent(0)->addChild(bng);
           // уничтожаем танк
           (*it)->disable(); // отключаем его
-          //_toDelete->push_back((*it)); // ставим в очередь на удаление со сцены
-          int playerNum = (*it)->_joyNum; // запонимаем номер уничтоженного игрока чтобы его зареспавнить
+          _toDelete->push_back((*it)); // ставим в очередь на удаление со сцены
+          //int playerNum = (*it)->_joyNum; // запонимаем номер уничтоженного игрока чтобы его зареспавнить
+          osg::ref_ptr<tank> destroyedEnemy = *it;
           //it = _tank->erase(it); // убираем из списка всех танков
           emit _parentTank->smbdyKilled(++_parentTank->_killCount); // увеличиваем число убийств
           // через какое-то время противнек зареспавнится
-          QTimer::singleShot(3000, _parentTank, [this, playerNum] { emit _parentTank->enemyNeedRespawn(playerNum); });
+          QTimer::singleShot(3000, destroyedEnemy, [destroyedEnemy] { emit destroyedEnemy->iNeedRespawn(destroyedEnemy.get()); });
           if (it == _tank->end())
             break;
         }

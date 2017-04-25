@@ -81,7 +81,7 @@ public:
   bool _enabled = false;
 signals:
   void smbdyKilled(int killCount);
-  void enemyNeedRespawn(int player);
+  void iNeedRespawn(osg::ref_ptr<tank> myself);
 private:
   osg::ref_ptr<tankCallback> _clb;
   std::map<osg::Vec2i, blockType>* _typeMap;

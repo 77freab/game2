@@ -264,10 +264,31 @@ public:
     connect(_tank[player], &tank::smbdyKilled, this, [this, player](int killCount)
       { _playersList->topLevelItem(player)->setText(1, QString::number(killCount)); });
     // после уничтожения танк будет респавниться через какое-то время
-    connect(_tank[player], &tank::enemyNeedRespawn, this, &ViewerWidget::spawnPlayer);
+    connect(_tank[player], &tank::iNeedRespawn, this, &ViewerWidget::respawnPlayer);
 
     // делаем кнопку спавна неактивной
     _playersList->itemWidget(_playersList->topLevelItem(player), 4)->setEnabled(false);
+  }
+
+  void respawnPlayer(osg::ref_ptr<tank> tank)
+  {
+    int x = (rand() % (mapSize[0] - 8) + 3) * 8;
+    int z = (rand() % (mapSize[1] - 6) + 3) * 8;
+
+    tank->_x = x;
+    tank->_z = z;
+
+    // расчищаем место дял спавна
+    clearPlaceForTank(tank->_x / 8, tank->_z / 8);
+
+    // перемещаем в точку спавна
+    osg::Matrix m;
+    m.makeTranslate(x, 0, z);
+    tank->setMatrix(m);
+
+    // добавляем на сцену а активируем
+    _scene->asGroup()->addChild(tank.get());
+    tank->enable();
   }
 
   void restart()
