@@ -63,8 +63,8 @@ public:
   tank(int x, int z, std::string texNum, int joyNum,
     std::vector<osg::ref_ptr<tank>>* tank,
     std::map<osg::Vec2i, blockType>* typeMap,
-    std::map<osg::Vec2i, tile*>* tileMap,
-    std::list<osg::Node*>* toDelete);
+    std::map<osg::Vec2i, osg::ref_ptr<osg::MatrixTransform>>* tileMap,
+    std::list<osg::Node*>* toDelete, tile* prjMaker);
   void moveTo(direction dir);
   void move();
   void stop();
@@ -85,8 +85,9 @@ signals:
 private:
   osg::ref_ptr<tankCallback> _clb;
   std::map<osg::Vec2i, blockType>* _typeMap;
-  std::map<osg::Vec2i, tile*>* _tileMap;
+  std::map<osg::Vec2i, osg::ref_ptr<osg::MatrixTransform>>* _tileMap;
   std::list<osg::Node*>* _toDelete;
+  tile* _prjMaker;
   osg::Vec2i _collisionPt1;
   osg::Vec2i _collisionPt2;
   osg::ref_ptr<osg::MatrixTransform> _rMt;
@@ -98,20 +99,20 @@ private:
   std::string _texDir = "UP";
 };
 
-class projectile : public tile
+class projectile : public osg::MatrixTransform
 {
 public:
   projectile(int x, int y, int z, direction,
-    std::string texPath, tank* parentTank,
+    blockType prjDir, tank* parentTank,
     std::vector<osg::ref_ptr<tank>>* tank,
     std::map<osg::Vec2i, blockType>* typeMap,
-    std::map<osg::Vec2i, tile*>* tileMap,
-    std::list<osg::Node*>* toDelete);
+    std::map<osg::Vec2i, osg::ref_ptr<osg::MatrixTransform>>* tileMap,
+    std::list<osg::Node*>* toDelete, tile* prjMaker);
   std::function<void()> moving;
   void move();
 private:
   std::map<osg::Vec2i, blockType>* _typeMap;
-  std::map<osg::Vec2i, tile*>* _tileMap;
+  std::map<osg::Vec2i, osg::ref_ptr<osg::MatrixTransform>>* _tileMap;
   std::list<osg::Node*>* _toDelete;
   direction _dir;
   osg::Matrix mT;

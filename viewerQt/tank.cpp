@@ -5,11 +5,11 @@ const int SHOOT_TIMEOUT = 300; // задержка между выстрелами в мс
 tank::tank(int x, int z, std::string texNum, int joyNum,
   std::vector<osg::ref_ptr<tank>>* tank,
   std::map<osg::Vec2i, blockType>* typeMap,
-  std::map<osg::Vec2i, tile*>* tileMap,
-  std::list<osg::Node*>* toDelete)
+  std::map<osg::Vec2i, osg::ref_ptr<osg::MatrixTransform>>* tileMap,
+  std::list<osg::Node*>* toDelete, tile* prjMaker)
   : _timer(new QDeadlineTimer(SHOOT_TIMEOUT)), _rMt(new MatrixTransform),
   _typeMap(typeMap), _tileMap(tileMap), _toDelete(toDelete),
-  _tank(tank), _joyNum(joyNum), _x0(x), _z0(z), _x(x), _z(z)
+  _tank(tank), _joyNum(joyNum), _x0(x), _z0(z), _x(x), _z(z), _prjMaker(prjMaker)
 {
   this->setDataVariance(osg::Object::DYNAMIC);
 
@@ -229,9 +229,18 @@ void tank::shoot()
   // обеспечиваем задержку при стрельбе
   if (_timer->hasExpired())
   {
-    _projectile = new projectile(_x - 4, 0, _z - 4, _curDir, 
-      "projectile/" + _texDir + ".png", this, _tank,
-      _typeMap, _tileMap, _toDelete);
+    blockType prjDir;
+    if (_curDir == direction::UP)
+      prjDir = blockType::PRJ_UP;
+    else if (_curDir == direction::DOWN)
+      prjDir = blockType::PRJ_DOWN;
+    else if (_curDir == direction::LEFT)
+      prjDir = blockType::PRJ_LEFT;
+    else if (_curDir == direction::RIGHT)
+      prjDir = blockType::PRJ_RIGHT;
+
+    _projectile = new projectile(_x - 4, 0, _z - 4, _curDir, prjDir, 
+      this, _tank, _typeMap, _tileMap, _toDelete, _prjMaker);
     this->getParent(0)->addChild(_projectile.get());
     _projectile->setName(this->getName() + " - projectile");
     // обновляем таймер
@@ -239,13 +248,13 @@ void tank::shoot()
   }
 }
 
-projectile::projectile(int x, int y, int z, direction dir, 
-  std::string texPath, tank* parentTank, 
+projectile::projectile(int x, int y, int z, direction dir,
+  blockType prjDir, tank* parentTank,
   std::vector<osg::ref_ptr<tank>>* tank,
   std::map<osg::Vec2i, blockType>* typeMap,
-  std::map<osg::Vec2i, tile*>* tileMap,
-  std::list<osg::Node*>* toDelete)
-  : tile(x, y, z, texPath, true), _dir(dir), _x(x), _z(z), _clb(new projectileCallback),
+  std::map<osg::Vec2i, osg::ref_ptr<osg::MatrixTransform>>* tileMap,
+  std::list<osg::Node*>* toDelete, tile* prjMaker)
+  : MatrixTransform(*prjMaker->getTile(x, y, z, prjDir, true)), _dir(dir), _x(x), _z(z), _clb(new projectileCallback),
   _parentTank(parentTank), _tank(tank), _typeMap(typeMap), _tileMap(tileMap), _toDelete(toDelete)
 {
   this->setDataVariance(osg::Object::DYNAMIC);

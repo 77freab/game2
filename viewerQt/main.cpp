@@ -166,7 +166,7 @@ public:
       int x = rand() % (mapSize[0] - 8) + 3;
       int z = rand() % (mapSize[1] - 6) + 3;
 
-      _tank.push_back(new tank(x * 8, z * 8, std::to_string(player % 13), player - 2, &_tank, &_typeMap, &_tileMap, &_toDelete));
+      _tank.push_back(new tank(x * 8, z * 8, std::to_string(player % 13), player - 2, &_tank, &_typeMap, &_tileMap, &_toDelete, &mapMaker));
       _tank.back()->setName(_scene->getName() + " - " + std::to_string(player) + " player tank");
 
       QTreeWidgetItem *item = new QTreeWidgetItem(_playersList);
@@ -322,10 +322,7 @@ public:
   {
     osg::ref_ptr<osg::Group> scene = new osg::Group;
     scene->setName("main scene");
-    osg::Vec2i createMap(osg::ref_ptr<osg::Group> scene,
-      std::map<osg::Vec2i, blockType>& typeMap,
-      std::map<osg::Vec2i, tile*>& tileMap, QString fileName);
-    mapSize = createMap(scene, _typeMap, _tileMap, _fileName);
+    mapSize = mapMaker.createMap(scene, _typeMap, _tileMap, _fileName);
 
     osgUtil::Optimizer opt;
     opt.optimize(scene,
@@ -634,6 +631,7 @@ private:
   osg::ref_ptr<osgViewer::Viewer> _viewer;
   osg::Vec2i mapSize; // размер карты
   QString _fileName; // строка для имени файла с картой
+  tile mapMaker;
 
   int _numJoysticks; // кол-во подключенных джойстиков
   tank* _wasdTank = nullptr; // ссылка на танк управляемый WASD
@@ -645,7 +643,7 @@ private:
   std::vector<osg::ref_ptr<tank>> _tank; // вектор содержащий все танки
   std::list<osg::Node*> _toDelete; // очередь на удаление
   std::map<osg::Vec2i, blockType> _typeMap; // список координат и типов тайлов расположенных по эти координатам
-  std::map<osg::Vec2i, tile*> _tileMap; // список координат и ссылок на сами тайлы расположенные по этим координатам
+  std::map<osg::Vec2i, osg::ref_ptr<osg::MatrixTransform>> _tileMap; // список координат и ссылок на сами тайлы расположенные по этим координатам
 };
 
 int main(int argc, char** argv)
