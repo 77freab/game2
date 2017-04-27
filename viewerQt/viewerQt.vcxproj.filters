@@ -46,9 +46,6 @@
     <ClCompile Include="tile.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="createMap.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="tank.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

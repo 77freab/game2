@@ -22,7 +22,7 @@
 #include <SDL.h>
 #undef main
 
-const int SIDE_PANEL_SIZE = 405;
+const int SIDE_PANEL_SIZE = 415;
 
 class ViewerWidget : public QWidget, public osgGA::GUIEventHandler
 {
@@ -83,7 +83,7 @@ public:
     header->setTextAlignment(4, Qt::AlignCenter);
     _playersList->setColumnWidth(0, 50);
     _playersList->setColumnWidth(1, 65);
-    _playersList->setColumnWidth(2, 70);
+    _playersList->setColumnWidth(2, 80);
     _playersList->setColumnWidth(3, 120);
     _playersList->setColumnWidth(4, 80);
 
@@ -163,21 +163,51 @@ public:
     {
       int player = _playerNum;
 
-      int x = rand() % (mapSize[0] - 8) + 3;
-      int z = rand() % (mapSize[1] - 6) + 3;
-
-      _tank.push_back(new tank(x * 8, z * 8, std::to_string(player % 13), player - 2, &_tank, &_typeMap, &_tileMap, &_toDelete, &mapMaker));
+      _tank.push_back(new tank(0, 0, std::to_string(player % 13), player - 2, &_tank, &_typeMap, &_tileMap, &_toDelete, &mapMaker));
       _tank.back()->setName(_scene->getName() + " - " + std::to_string(player) + " player tank");
 
       QTreeWidgetItem *item = new QTreeWidgetItem(_playersList);
 
-      item->setIcon(0, QIcon("./Resources/tank/tank" + QString::number(_playerNum % 13) + ".bmp"));
+      item->setIcon(0, QIcon("./Resources/heavyTank/" + QString::number(_playerNum % 13) + ".bmp"));
       item->setText(1, QString::fromLocal8Bit("0"));
 
-      QPushButton* tankTypeBtn = new QPushButton(QString::fromLocal8Bit("Легкий")); // тип танка
+      // тип танка
+      QPushButton* tankTypeBtn = new QPushButton(QString::fromLocal8Bit("Легкий"));
+      QMenu* tankTypeMenu = new QMenu;
+
+      // кнопка смены типа танка на легкий
+      QAction* act = new QAction;
+      connect(act, &QAction::triggered, tankTypeBtn, [tankTypeBtn, act] { tankTypeBtn->setText(act->text()); });
+      connect(act, &QAction::triggered, this, [this, player] 
+      { 
+        if (_tank[player]->_type != tank::type::LIGHT)
+        {
+          _tank[player]->_needTypeChange = true;
+          _playersList->itemWidget(_playersList->topLevelItem(player), 4)->setEnabled(true);
+        }
+      });
+      act->setText(QString::fromLocal8Bit("Легкий"));
+      tankTypeMenu->addAction(act);
+
+      // кнопка смены типа танка на тяжелый
+      act = new QAction;
+      connect(act, &QAction::triggered, tankTypeBtn, [tankTypeBtn, act] { tankTypeBtn->setText(act->text()); });
+      connect(act, &QAction::triggered, this, [this, player] 
+      { 
+        if (_tank[player]->_type != tank::type::HEAVY)
+        {
+          _tank[player]->_needTypeChange = true;
+          _playersList->itemWidget(_playersList->topLevelItem(player), 4)->setEnabled(true);
+        }
+      });
+      act->setText(QString::fromLocal8Bit("Тяжелый"));
+      tankTypeMenu->addAction(act);
+
+      tankTypeBtn->setMenu(tankTypeMenu);
       _playersList->setItemWidget(item, 2, tankTypeBtn);
 
-      QPushButton* controlsBtn = new QPushButton(controlsName(player - 2)); // управление
+      // управление
+      QPushButton* controlsBtn = new QPushButton(controlsName(player - 2));
       // по умолчанию танки 0 и 1 управляются с WASD и стрелок соответственно
       if (player == 0)
         _wasdTank = _tank.back();
@@ -187,7 +217,7 @@ public:
       QMenu* controlsMenu = new QMenu;
 
       // кнопка смены управления на WASD
-      QAction* act = new QAction;
+      act = new QAction;
       connect(act, &QAction::triggered, controlsBtn, [controlsBtn, act] { controlsBtn->setText(act->text()); });
       connect(act, &QAction::triggered, this, [this, player] { changeControls(player, -2); });
       act->setText(QString::fromLocal8Bit("WASD + Space"));
@@ -216,7 +246,17 @@ public:
       QPushButton* spawnBtn = new QPushButton("GO");
       _playersList->setItemWidget(item, 4, spawnBtn);
 
-      connect(spawnBtn, &QPushButton::clicked, this, [this, player] { spawnPlayer(player); });
+      // при убистве счетчик будет обновляться
+      connect(_tank[player], &tank::smbdyKilled, this, [this, player](int killCount)
+        { _playersList->topLevelItem(player)->setText(1, QString::number(killCount)); });
+      // после уничтожения танк будет респавниться через какое-то время
+      connect(_tank[player], &tank::iNeedRespawn, this, &ViewerWidget::spawnPlayer);
+      // заспавнить по нажатию кнопки
+      connect(spawnBtn, &QPushButton::clicked, this, [this, player] 
+        { spawnPlayer(_tank[player].get());
+          // делаем кнопку спавна неактивной
+          _playersList->itemWidget(_playersList->topLevelItem(player), 4)->setEnabled(false); });
+
       _playerNum++;
       item->setTextAlignment(0, Qt::AlignCenter);
       item->setTextAlignment(1, Qt::AlignCenter);
@@ -252,38 +292,23 @@ public:
     }
   }
 
-  void spawnPlayer(const int player)
+  void spawnPlayer(osg::ref_ptr<tank> tank)
   {
-    clearPlaceForTank(_tank[player]->_x / 8, _tank[player]->_z / 8);
+    if (tank->_needTypeChange)
+      tank->changeType();
 
-    // добавляем танк
-    _scene->asGroup()->addChild(_tank[player]);
-    _tank[player]->enable();
+    int x = rand() % (mapSize[0] - 8) + 3;
+    int z = rand() % (mapSize[1] - 6) + 3;
 
-    // при убистве счетчик будет обновляться
-    connect(_tank[player], &tank::smbdyKilled, this, [this, player](int killCount)
-      { _playersList->topLevelItem(player)->setText(1, QString::number(killCount)); });
-    // после уничтожения танк будет респавниться через какое-то время
-    connect(_tank[player], &tank::iNeedRespawn, this, &ViewerWidget::respawnPlayer);
-
-    // делаем кнопку спавна неактивной
-    _playersList->itemWidget(_playersList->topLevelItem(player), 4)->setEnabled(false);
-  }
-
-  void respawnPlayer(osg::ref_ptr<tank> tank)
-  {
-    int x = (rand() % (mapSize[0] - 8) + 3) * 8;
-    int z = (rand() % (mapSize[1] - 6) + 3) * 8;
-
-    tank->_x = x;
-    tank->_z = z;
+    tank->_x = x * 8;
+    tank->_z = z * 8;
 
     // расчищаем место дял спавна
-    clearPlaceForTank(tank->_x / 8, tank->_z / 8);
+    clearPlaceForTank(x, z);
 
     // перемещаем в точку спавна
     osg::Matrix m;
-    m.makeTranslate(x, 0, z);
+    m.makeTranslate(x * 8, 0, z * 8);
     tank->setMatrix(m);
 
     // добавляем на сцену а активируем
@@ -296,11 +321,11 @@ public:
     _typeMap.clear();
     _tileMap.clear();
     _toDelete.clear();
-    _tank.clear();
+    //_tank.clear();
 
     // отключаем все танки
-    for (int i = 0; i < _playerNum; i++)
-      _tank[i]->disable();
+    for (auto it = _tank.cbegin(); it != _tank.cend(); it++)
+      (*it)->disable();
 
     _playerNum = 0;
     
@@ -312,6 +337,7 @@ public:
       _playersList->itemWidget(tempItem, 4)->setEnabled(true);
     }
 
+    _scene = nullptr;
     _scene = createScene();
     osgQt::GLWidget* newViewerWidget = addViewWidget(createGraphicsWindow(0, 0, 800, 700), _scene.get());;
     _hLayout->replaceWidget(_viewerWidget, newViewerWidget);

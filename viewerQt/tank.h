@@ -21,12 +21,16 @@ class projectileCallback : public osg::NodeCallback
 {
 public:
   void operator()(osg::Node*, osg::NodeVisitor*);
+private:
+  bool delay = false;
 };
 
 class tankCallback : public osg::NodeCallback
 {
 public:
   void operator()(osg::Node*, osg::NodeVisitor*);
+private:
+  bool delay = false;
 };
 
 class bangCallback : public osg::NodeCallback
@@ -60,6 +64,12 @@ class tank : public QObject, public osg::MatrixTransform
 {
   Q_OBJECT
 public:
+  enum class type
+  {
+    LIGHT = 0,
+    HEAVY = 1
+  };
+
   tank(int x, int z, std::string texNum, int joyNum,
     std::vector<osg::ref_ptr<tank>>* tank,
     std::map<osg::Vec2i, blockType>* typeMap,
@@ -69,9 +79,13 @@ public:
   void move();
   void stop();
   void shoot();
-  bool _go = false;
   void enable();
   void disable();
+  void changeType();
+  inline direction curDir();
+  bool _needTypeChange = false;
+  type _type;
+  bool _go = false;
   osg::ref_ptr<projectile> _projectile;
   int _x;
   int _z;
@@ -87,13 +101,12 @@ private:
   std::map<osg::Vec2i, blockType>* _typeMap;
   std::map<osg::Vec2i, osg::ref_ptr<osg::MatrixTransform>>* _tileMap;
   std::list<osg::Node*>* _toDelete;
+  std::string _texNum;
   tile* _prjMaker;
   osg::Vec2i _collisionPt1;
   osg::Vec2i _collisionPt2;
   osg::ref_ptr<osg::MatrixTransform> _rMt;
   std::vector<osg::ref_ptr<tank>>* _tank;
-  const int _x0;
-  const int _z0;
   direction _goDir = direction::UP;
   direction _curDir = direction::UP;
   std::string _texDir = "UP";

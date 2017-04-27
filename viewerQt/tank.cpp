@@ -8,8 +8,8 @@ tank::tank(int x, int z, std::string texNum, int joyNum,
   std::map<osg::Vec2i, osg::ref_ptr<osg::MatrixTransform>>* tileMap,
   std::list<osg::Node*>* toDelete, tile* prjMaker)
   : _timer(new QDeadlineTimer(SHOOT_TIMEOUT)), _rMt(new MatrixTransform),
-  _typeMap(typeMap), _tileMap(tileMap), _toDelete(toDelete),
-  _tank(tank), _joyNum(joyNum), _x0(x), _z0(z), _x(x), _z(z), _prjMaker(prjMaker)
+  _typeMap(typeMap), _tileMap(tileMap), _toDelete(toDelete), _texNum(texNum),
+  _tank(tank), _joyNum(joyNum), _x(x), _z(z), _prjMaker(prjMaker), _type(type::LIGHT)
 {
   this->setDataVariance(osg::Object::DYNAMIC);
 
@@ -18,9 +18,9 @@ tank::tank(int x, int z, std::string texNum, int joyNum,
   this->setMatrix(m); // наследуется от MatrixTransform для перемещения
 
   osg::ref_ptr<osg::Node> node = // читаем модельку
-    osgDB::readNodeFile("./Resources/Leopard 2A4.3ds.5.scale.90,180,0.rot");
+    osgDB::readNodeFile("./Resources/lightTank/bradle.3ds.15.scale.90,90,0.rot");
   osg::ref_ptr<osg::Image> image = // читаем текстуру
-    osgDB::readImageFile("./Resources/tank/tank" + texNum + ".bmp");
+    osgDB::readImageFile("./Resources/lightTank/" + texNum + ".png");
 
   // устанавливаем текстуру
   osg::StateSet* state = node->getOrCreateStateSet();
@@ -30,6 +30,39 @@ tank::tank(int x, int z, std::string texNum, int joyNum,
   
   _rMt->addChild(node.get()); // дополнительный MatrixTransform для поворота
   this->addChild(_rMt.get());
+}
+
+void tank::changeType()
+{
+  _rMt->removeChildren(0, _rMt->getNumChildren());
+
+  osg::ref_ptr<osg::Node> node;
+  osg::ref_ptr<osg::Image> image;
+  
+  if (_type == type::HEAVY)
+  {
+    node = // читаем модельку
+      osgDB::readNodeFile("./Resources/lightTank/bradle.3ds.15.scale.90,90,0.rot");
+    image = // читаем текстуру
+      osgDB::readImageFile("./Resources/lightTank/" + _texNum + ".png");
+    _type = type::LIGHT;
+  }
+  else if (_type == type::LIGHT)
+  {
+    node = // читаем модельку
+      osgDB::readNodeFile("./Resources/heavyTank/Leopard 2A4.3ds.5.scale.90,180,0.rot");
+    image = // читаем текстуру
+      osgDB::readImageFile("./Resources/heavyTank/" + _texNum + ".bmp");
+    _type = type::HEAVY;
+  }
+
+  // устанавливаем текстуру
+  osg::StateSet* state = node->getOrCreateStateSet();
+  osg::ref_ptr<osg::Texture2D> texture = new osg::Texture2D;
+  texture->setImage(image.get());
+  state->setTextureAttributeAndModes(0, texture.get());
+
+  _rMt->addChild(node.get());
 }
 
 void tank::moveTo(direction dir)
@@ -128,17 +161,31 @@ void tank::move()
           tStop = true;
       }
     }
-    // впереди чисто двигаемся
+    // впереди чисто, двигаемся
     if (!tStop)
     {
-      if (_goDir == direction::UP)
-        _z++;
-      if (_goDir == direction::DOWN)
-        _z--;
-      if (_goDir == direction::LEFT)
-        _x--;
-      if (_goDir == direction::RIGHT)
-        _x++;
+      if (_type == type::HEAVY)
+      {
+        if (_goDir == direction::UP)
+          _z++;
+        if (_goDir == direction::DOWN)
+          _z--;
+        if (_goDir == direction::LEFT)
+          _x--;
+        if (_goDir == direction::RIGHT)
+          _x++;
+      }
+      else
+      {
+        if (_goDir == direction::UP)
+          _z+=2;
+        if (_goDir == direction::DOWN)
+          _z-=2;
+        if (_goDir == direction::LEFT)
+          _x-=2;
+        if (_goDir == direction::RIGHT)
+          _x+=2;
+      }
     }
   }
 
@@ -224,6 +271,11 @@ void tank::disable()
   _enabled = false; // чтоб коллизии для него не расчитывались
 }
 
+direction tank::curDir()
+{
+  return _curDir;
+}
+
 void tank::shoot()
 {
   // обеспечиваем задержку при стрельбе
@@ -259,15 +311,20 @@ projectile::projectile(int x, int y, int z, direction dir,
 {
   this->setDataVariance(osg::Object::DYNAMIC);
   this->setUpdateCallback(_clb);
+  int prjSpeed;
+  if (parentTank->_type == tank::type::LIGHT)
+    prjSpeed = 4;
+  else if(parentTank->_type == tank::type::HEAVY)
+    prjSpeed = 2;
   switch (_dir)
   {
     case(direction::UP) :
     {
       _collisionPt1 = { (_x + 2) / 8, (_z + 8) / 8 };
       _collisionPt2 = { (_x + 6) / 8, (_z + 8) / 8 };
-      moving = [this]
+      moving = [this, prjSpeed]
       {
-        _z += 4;
+        _z += prjSpeed;
         _collisionPt1[1] = (_z + 8) / 8;
         _collisionPt2[1] = (_z + 8) / 8;
         mT.makeTranslate(_x, 0, _z);
@@ -279,9 +336,9 @@ projectile::projectile(int x, int y, int z, direction dir,
     {
       _collisionPt1 = { (_x + 2) / 8, (_z) / 8 };
       _collisionPt2 = { (_x + 6) / 8, (_z) / 8 };
-      moving = [this]
+      moving = [this, prjSpeed]
       {
-        _z -= 4;
+        _z -= prjSpeed;
         _collisionPt1[1] = (_z) / 8;
         _collisionPt2[1] = (_z) / 8;
         mT.makeTranslate(_x, 0, _z);
@@ -293,9 +350,9 @@ projectile::projectile(int x, int y, int z, direction dir,
     {
       _collisionPt1 = { (_x) / 8, (_z + 2) / 8 };
       _collisionPt2 = { (_x) / 8, (_z + 6) / 8 };
-      moving = [this]
+      moving = [this, prjSpeed]
       {
-        _x -= 4;
+        _x -= prjSpeed;
         _collisionPt1[0] = (_x) / 8;
         _collisionPt2[0] = (_x) / 8;
         mT.makeTranslate(_x, 0, _z);
@@ -307,9 +364,9 @@ projectile::projectile(int x, int y, int z, direction dir,
     {
       _collisionPt1 = { (_x + 8) / 8, (_z + 2) / 8 };
       _collisionPt2 = { (_x + 8) / 8, (_z + 6) / 8 };
-      moving = [this]
+      moving = [this, prjSpeed]
       {
-        _x += 4;
+        _x += prjSpeed;
         _collisionPt1[0] = (_x + 8) / 8;
         _collisionPt2[0] = (_x + 8) / 8;
         mT.makeTranslate(_x, 0, _z);
@@ -360,30 +417,37 @@ void projectile::move()
   else
     bGo = true;
 
-  for (auto it = _tank->cbegin(); it != _tank->end(); ++it)
-  {
-    if ((*it).get() != _parentTank && (*it)->_enabled)
-      if (_z + 6 >= (*it)->_z - 8 && _z + 2 <= (*it)->_z + 8)
-        if (_x + 6 >= (*it)->_x - 8 && _x + 2 <= (*it)->_x + 8) // есть попадание
-        {
-          // уничтожить снаряд
-          projDel = true;
-          // создаем взрыв
-          bang* bng = new bang((*it)->_x, 4, (*it)->_z, _toDelete);
-          _parentTank->getParent(0)->addChild(bng);
-          // уничтожаем танк
-          (*it)->disable(); // отключаем его
-          _toDelete->push_back((*it)); // ставим в очередь на удаление со сцены
-          //int playerNum = (*it)->_joyNum; // запонимаем номер уничтоженного игрока чтобы его зареспавнить
-          osg::ref_ptr<tank> destroyedEnemy = *it;
-          //it = _tank->erase(it); // убираем из списка всех танков
-          emit _parentTank->smbdyKilled(++_parentTank->_killCount); // увеличиваем число убийств
-          // через какое-то время противнек зареспавнится
-          QTimer::singleShot(3000, destroyedEnemy, [destroyedEnemy] { emit destroyedEnemy->iNeedRespawn(destroyedEnemy.get()); });
-          if (it == _tank->end())
-            break;
-        }
-  }
+  if (!projDel)
+    for (auto it = _tank->cbegin(); it != _tank->end(); ++it)
+    {
+      if ((*it).get() != _parentTank && (*it)->_enabled)
+        if (_z + 6 >= (*it)->_z - 8 && _z + 2 <= (*it)->_z + 8)
+          if (_x + 6 >= (*it)->_x - 8 && _x + 2 <= (*it)->_x + 8) // есть попадание
+          {
+            // уничтожить снаряд
+            projDel = true;
+          
+            // если попали в лоб тяжелому танку - нет пробития
+            osg::ref_ptr<tank> attackedEnemy = *it;
+            if (!(attackedEnemy->_type == tank::type::HEAVY &&
+              abs(static_cast<int>(attackedEnemy->curDir()) - static_cast<int>(_dir)) == 2))
+            {
+              // создаем взрыв
+              bang* bng = new bang((*it)->_x, 4, (*it)->_z, _toDelete);
+              _parentTank->getParent(0)->addChild(bng);
+
+              // уничтожаем танк
+              (*it)->disable(); // отключаем его
+              _toDelete->push_back((*it)); // ставим в очередь на удаление со сцены
+
+              // увеличиваем число убийств
+              emit _parentTank->smbdyKilled(++_parentTank->_killCount);
+            
+              // через какое-то время противнек зареспавнится
+              QTimer::singleShot(3000, attackedEnemy, [attackedEnemy] { emit attackedEnemy->iNeedRespawn(attackedEnemy.get()); });
+            }
+          }
+    }
 
   if (projDel)
   {
@@ -481,15 +545,19 @@ void bang::makeBang()
 void projectileCallback::operator()(osg::Node* nd, osg::NodeVisitor* ndv)
 {
   projectile* prj = dynamic_cast<projectile*>(nd);
-  prj->move();
+  if (!delay)
+    prj->move();
+  delay = !delay;
   traverse(nd, ndv);
 }
 
 void tankCallback::operator()(osg::Node* nd, osg::NodeVisitor* ndv)
 {
   tank* tnk = dynamic_cast<tank*>(nd);
-  if (tnk->_go)
-    tnk->move();
+  if (!delay)
+    if (tnk->_go)
+      tnk->move();
+  delay = !delay;
   traverse(nd, ndv);
 }
 

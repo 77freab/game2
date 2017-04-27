@@ -31,6 +31,6 @@ public:
 private:
   void skipUnknownElement(QXmlStreamReader& reader);
   osg::ref_ptr<osg::Geode> makeNewTile(blockType bt, bool pr);
-  std::map<blockType, osg::ref_ptr<osg::Geode>> _tiles;
-  std::map<blockType, std::string> blockTex;
+  std::vector<osg::ref_ptr<osg::Geode>> _tiles;
+  std::vector<std::string> blockTex;
 };
