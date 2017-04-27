@@ -126,6 +126,45 @@ osg::ref_ptr<osg::Geode> tile::makeNewTile(blockType bt, bool pr)
 
   osg::ref_ptr<osg::Geode> geode = new osg::Geode;
   geode->addDrawable(geom);
+  
+  // если это снаряд добавляем 2 плоскость
+  if (static_cast<int>(bt) > 5)
+  {
+    osg::ref_ptr<osg::Geometry> hGeom = new osg::Geometry(*geom);
+    osg::ref_ptr<osg::Vec3Array> hVertices = new osg::Vec3Array;
+    osg::ref_ptr<osg::Vec3Array> hNormals = new osg::Vec3Array;
+    hNormals->setBinding(osg::Array::BIND_OVERALL);
+
+    if (bt == blockType::PRJ_DOWN || bt == blockType::PRJ_UP)
+    {
+      // вершины
+      hVertices->push_back(osg::Vec3(4,  4, 0)); // 1
+      hVertices->push_back(osg::Vec3(4, -4, 0)); // 2
+      hVertices->push_back(osg::Vec3(4, -4, 8)); // 3
+      hVertices->push_back(osg::Vec3(4,  4, 8)); // 4
+
+      // нормаль
+      hNormals->push_back(osg::Vec3(1, 0, 0));
+    }
+    else
+    {
+      // вершины
+      hVertices->push_back(osg::Vec3(0,  4, 4)); // 1
+      hVertices->push_back(osg::Vec3(8,  4, 4)); // 2
+      hVertices->push_back(osg::Vec3(8, -4, 4)); // 3
+      hVertices->push_back(osg::Vec3(0, -4, 4)); // 4
+
+      // нормаль
+      hNormals->push_back(osg::Vec3(0, 0, 1));
+    }
+      
+
+    // геометрия
+    hGeom->setVertexArray(hVertices);
+    hGeom->setNormalArray(hNormals);
+
+    geode->addDrawable(hGeom);
+  }
 
   _tiles[static_cast<int>(bt)] = geode;
   return geode;
@@ -139,12 +178,9 @@ osg::ref_ptr<osg::MatrixTransform> tile::getTile(int x, int y, int z, blockType 
   mt->setMatrix(m);
 
   if (_tiles[static_cast<int>(bt)] == nullptr)
-  {
     makeNewTile(bt, pr);
-    mt->addChild(_tiles[static_cast<int>(bt)]);
-  }
-  else
-    mt->addChild(_tiles[static_cast<int>(bt)]);
+
+  mt->addChild(_tiles[static_cast<int>(bt)]);
 
   return mt;
 }
@@ -192,18 +228,19 @@ void tile::skipUnknownElement(QXmlStreamReader& reader)
   }
 }
 
-osg::Vec2i tile::createMap(osg::ref_ptr<osg::Group> scene,
+int tile::createMap(osg::ref_ptr<osg::Group> scene,
   std::map<osg::Vec2i, blockType>& typeMap,
-  std::map<osg::Vec2i, osg::ref_ptr<osg::MatrixTransform>>& tileMap, QString fileName)
+  std::map<osg::Vec2i, osg::ref_ptr<osg::MatrixTransform>>& tileMap, 
+  QString fileName, osg::Vec2i& mapSize)
 {
   _tiles.clear();
   for (int i = 0; i < 10; i++)
     _tiles.push_back(nullptr);
 
-  osg::Vec2i mapSize;
   QXmlStreamReader reader;
   QFile file(fileName);
-  file.open(QIODevice::ReadOnly | QFile::Text);
+  if (!file.open(QIODevice::ReadOnly | QFile::Text))
+    return -1; // файл не открывается
   reader.setDevice(&file);
   reader.readNext();
   while (!reader.atEnd())
@@ -215,6 +252,8 @@ osg::Vec2i tile::createMap(osg::ref_ptr<osg::Group> scene,
       if (reader.name() == "map")
       {
         // читаем карту
+        typeMap.clear();
+        tileMap.clear();
         reader.readNext();
         while (!reader.atEnd())
         {
@@ -299,7 +338,7 @@ osg::Vec2i tile::createMap(osg::ref_ptr<osg::Group> scene,
       }
       else
       {
-        // херовый файл
+        return -2; // в файле нет мапы
       }
     }
     else
@@ -320,5 +359,5 @@ osg::Vec2i tile::createMap(osg::ref_ptr<osg::Group> scene,
           tileMap[{ x, z }] = getTile(x * 8, 0, z * 8, (*it).second);
         scene->addChild(tileMap[{ x, z }]);
       }
-  return mapSize;
+  return 0;
 }

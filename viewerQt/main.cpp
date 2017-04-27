@@ -6,6 +6,7 @@
 #include <QtWidgets/QTreeWidget>
 #include <QFileDialog>
 #include <QMenu>
+#include <QMessageBox>
 
 #include <osgViewer/ViewerEventHandlers>
 #include <osgDB/ReadFile>
@@ -163,7 +164,22 @@ public:
     {
       int player = _playerNum;
 
-      _tank.push_back(new tank(0, 0, std::to_string(player % 13), player - 2, &_tank, &_typeMap, &_tileMap, &_toDelete, &mapMaker));
+      // ищем незанятый способ управленя танком
+      for (int freeControl = -2; freeControl < _numJoysticks; freeControl++)
+      {
+        bool pr = true;
+        for (auto it = _tank.cbegin(); it != _tank.cend(); it++)
+        {
+          if ((*it)->_joyNum == freeControl)
+            pr = false;
+        }
+        if (pr)
+        {
+          _tank.push_back(new tank(0, 0, std::to_string(player % 13), freeControl, &_tank, &_typeMap, &_tileMap, &_toDelete, &mapMaker));
+          break;
+        }
+      }
+
       _tank.back()->setName(_scene->getName() + " - " + std::to_string(player) + " player tank");
 
       QTreeWidgetItem *item = new QTreeWidgetItem(_playersList);
@@ -207,11 +223,11 @@ public:
       _playersList->setItemWidget(item, 2, tankTypeBtn);
 
       // управление
-      QPushButton* controlsBtn = new QPushButton(controlsName(player - 2));
+      QPushButton* controlsBtn = new QPushButton(controlsName(_tank.back()->_joyNum));
       // по умолчанию танки 0 и 1 управляются с WASD и стрелок соответственно
-      if (player == 0)
+      if (_tank.back()->_joyNum == -2)
         _wasdTank = _tank.back();
-      if (player == 1)
+      if (_tank.back()->_joyNum == -1)
         _arrowsTank = _tank.back();
 
       QMenu* controlsMenu = new QMenu;
@@ -297,8 +313,8 @@ public:
     if (tank->_needTypeChange)
       tank->changeType();
 
-    int x = rand() % (mapSize[0] - 8) + 3;
-    int z = rand() % (mapSize[1] - 6) + 3;
+    int x = rand() % (_mapSize[0] - 8) + 3;
+    int z = rand() % (_mapSize[1] - 6) + 3;
 
     tank->_x = x * 8;
     tank->_z = z * 8;
@@ -318,37 +334,52 @@ public:
 
   void restart()
   {
-    _typeMap.clear();
-    _tileMap.clear();
-    _toDelete.clear();
-    //_tank.clear();
-
-    // отключаем все танки
-    for (auto it = _tank.cbegin(); it != _tank.cend(); it++)
-      (*it)->disable();
-
-    _playerNum = 0;
-    
-    // делаем кнопку спавна опять активной и обнуляем счетчик убийств
-    for (int i = 0; i < _playersList->topLevelItemCount(); i++)
+    while (!_toDelete.empty())
     {
-      QTreeWidgetItem* tempItem = _playersList->topLevelItem(i);
-      tempItem->setText(1, "0");
-      _playersList->itemWidget(tempItem, 4)->setEnabled(true);
+      _toDelete.front()->getParent(0)->removeChild(_toDelete.front());
+      _toDelete.pop_front();
     }
 
-    _scene = nullptr;
-    _scene = createScene();
-    osgQt::GLWidget* newViewerWidget = addViewWidget(createGraphicsWindow(0, 0, 800, 700), _scene.get());;
-    _hLayout->replaceWidget(_viewerWidget, newViewerWidget);
-    _viewerWidget = newViewerWidget;
+    //_playerNum = 0; // смешной баг с ускорением
+
+    osg::Node* temp;
+    if ((temp = createScene()) != nullptr)
+    {
+      // отключаем все танки
+      for (auto it = _tank.cbegin(); it != _tank.cend(); it++)
+        (*it)->disable();
+
+      // делаем кнопку спавна опять активной и обнуляем счетчик убийств
+      for (int i = 0; i < _playersList->topLevelItemCount(); i++)
+      {
+        QTreeWidgetItem* tempItem = _playersList->topLevelItem(i);
+        tempItem->setText(1, "0");
+        _playersList->itemWidget(tempItem, 4)->setEnabled(true);
+      }
+      _scene = temp;
+      osgQt::GLWidget* newViewerWidget = addViewWidget(createGraphicsWindow(0, 0, 800, 700), _scene.get());;
+      _hLayout->replaceWidget(_viewerWidget, newViewerWidget);
+      _viewerWidget = newViewerWidget;
+    }
   }
 
   osg::ref_ptr<osg::Node> createScene()
   {
     osg::ref_ptr<osg::Group> scene = new osg::Group;
     scene->setName("main scene");
-    mapSize = mapMaker.createMap(scene, _typeMap, _tileMap, _fileName);
+    int returnCode;
+    if ((returnCode = mapMaker.createMap(scene, _typeMap, _tileMap, _fileName, _mapSize)) == -2)
+    {
+      QMessageBox::warning(this, "file error",
+        QString::fromLocal8Bit("Кривой файл"), QMessageBox::Ok);
+      return nullptr;
+    }
+    else if (returnCode == -1)
+    {
+      QMessageBox::warning(this, "file error",
+        QString::fromLocal8Bit("Не могу открыть файл"), QMessageBox::Ok);
+      return nullptr;
+    }
 
     osgUtil::Optimizer opt;
     opt.optimize(scene,
@@ -377,8 +408,8 @@ public:
 
     camera->setClearColor(osg::Vec4(0, 0, 0, 1));
     camera->setViewport(new osg::Viewport(0, 0, traits->width, traits->height));
-    camera->setViewMatrixAsLookAt({ -100, -440, -100 }, { 128, 0, 112 }, { 1, 1, 1 });
-    camera->setProjectionMatrixAsPerspective(28.0f, 32./28, 1.0f, 10000.0f);
+    //camera->setViewMatrixAsLookAt({ -100, -440, -100 }, { 128, 0, 112 }, { 1, 1, 1 });
+    //camera->setProjectionMatrixAsPerspective(28.0f, 32./28, 1.0f, 10000.0f);
 
     _viewer->setSceneData(scene);
     //_viewer->addEventHandler(new osgViewer::StatsHandler); // ФПС и прочее
@@ -417,25 +448,25 @@ public:
           case(119) : // W
           {
             _pressedKeys[119] = true;
-            _wasdTank->moveTo(direction::UP);
+            _wasdTank->moveTo(_up);
             break;
           }
           case(115) : // S
           {
             _pressedKeys[115] = true;
-            _wasdTank->moveTo(direction::DOWN);
+            _wasdTank->moveTo(_down);
             break;
           }
           case(97) : // A
           {
             _pressedKeys[97] = true;
-            _wasdTank->moveTo(direction::LEFT);
+            _wasdTank->moveTo(_left);
             break;
           }
           case(100) : // D
           {
             _pressedKeys[100] = true;
-            _wasdTank->moveTo(direction::RIGHT);
+            _wasdTank->moveTo(_right);
             break;
           }
           case(32) : // SPACE
@@ -451,25 +482,25 @@ public:
           case(osgGA::GUIEventAdapter::KEY_Up) : // up
           {
             _pressedKeys[65362] = true;
-            _arrowsTank->moveTo(direction::UP);
+            _arrowsTank->moveTo(_up);
             break;
           }
           case(osgGA::GUIEventAdapter::KEY_Down) : // down
           {
             _pressedKeys[65364] = true;
-            _arrowsTank->moveTo(direction::DOWN);
+            _arrowsTank->moveTo(_down);
             break;
           }
           case(osgGA::GUIEventAdapter::KEY_Left) : // left
           {
             _pressedKeys[65361] = true;
-            _arrowsTank->moveTo(direction::LEFT);
+            _arrowsTank->moveTo(_left);
             break;
           }
           case(osgGA::GUIEventAdapter::KEY_Right) : // right
           {
             _pressedKeys[65363] = true;
-            _arrowsTank->moveTo(direction::RIGHT);
+            _arrowsTank->moveTo(_right);
             break;
           }
           case(osgGA::GUIEventAdapter::KEY_0) : // num0
@@ -494,13 +525,13 @@ public:
             _pressedKeys[key] = false;
             // если это была единственная нажатая клавиша то танк останавливается
             if (_pressedKeys[119])
-              _wasdTank->moveTo(direction::UP);
+              _wasdTank->moveTo(_up);
             else if (_pressedKeys[115])
-              _wasdTank->moveTo(direction::DOWN);
+              _wasdTank->moveTo(_down);
             else if (_pressedKeys[97])
-              _wasdTank->moveTo(direction::LEFT);
+              _wasdTank->moveTo(_left);
             else if (_pressedKeys[100])
-              _wasdTank->moveTo(direction::RIGHT);
+              _wasdTank->moveTo(_right);
             else
               _wasdTank->stop();
             break;
@@ -517,13 +548,13 @@ public:
             _pressedKeys[key] = false;
             // если это была единственная нажатая клавиша то танк останавливается
             if (_pressedKeys[65362])
-              _arrowsTank->moveTo(direction::UP);
+              _arrowsTank->moveTo(_up);
             else if (_pressedKeys[65364])
-              _arrowsTank->moveTo(direction::DOWN);
+              _arrowsTank->moveTo(_down);
             else if (_pressedKeys[65361])
-              _arrowsTank->moveTo(direction::LEFT);
+              _arrowsTank->moveTo(_left);
             else if (_pressedKeys[65363])
-              _arrowsTank->moveTo(direction::RIGHT);
+              _arrowsTank->moveTo(_right);
             else
               _arrowsTank->stop();
             break;
@@ -572,72 +603,89 @@ public:
       _toDelete.pop_front();
     }
 
-    int x, z;
-    direction _up, _down, _left, _right;
-    int _hAxis, _vAxis;
-    bool _startBtn, _fireBtn;
+    int hAxis, vAxis;
+    bool startBtn, fireBtn;
+    // центр карты
+    //int centerX = _mapSize[0] * 4;
+    //int centerZ = _mapSize[1] * 4;
+    // расположение камеры в пространстве по осям x и z
+    //int camX = _viewer->getCamera()->getViewMatrix()(3, 2) + centerX; // 3 строка 0 столбец
+    //int camZ = _viewer->getCamera()->getViewMatrix()(3, 0) + centerZ;
+    int camX = _viewer->getCamera()->getViewMatrix()(3, 0);
+    int camZ = _viewer->getCamera()->getViewMatrix()(3, 1);
 
-    for (auto it = _tank.cbegin(); it != _tank.end(); ++it)
+    //if (camX >= camZ && camX < -camZ)
+    if (camZ < 0)
     {
-      if ((*it)->_joyNum < 0)
-        continue;
-      (*it)->stop();
-
-      _joy = SDL_JoystickOpen((*it)->_joyNum);
-
-      // расположение камеры в пространстве по осям x и z
-      x = _viewer->getCamera()->getViewMatrix()(3, 0);
-      z = _viewer->getCamera()->getViewMatrix()(3, 1);
-
-      if (x < 0 && z < 0)
+      
+      //if (camZ < centerZ)
+      if (camX < 0)
       {
+        // камера снизу
         _up = direction::UP;
         _down = direction::DOWN;
         _left = direction::LEFT;
         _right = direction::RIGHT;
       }
-      if (x > 0 && z < 0)
+      else
       {
+        // камера слева
         _up = direction::RIGHT;
         _down = direction::LEFT;
         _left = direction::UP;
         _right = direction::DOWN;
       }
-      if (x > 0 && z > 0)
+    }
+    else
+    {
+      //if (camX < centerX)
+      if (camX > 0)
       {
+        // камера сверху
         _up = direction::DOWN;
         _down = direction::UP;
         _left = direction::RIGHT;
         _right = direction::LEFT;
       }
-      if (x < 0 && z > 0)
+      else
       {
+        // камера справа
         _up = direction::LEFT;
         _down = direction::RIGHT;
         _left = direction::DOWN;
         _right = direction::UP;
       }
+    }
+
+    for (auto it = _tank.cbegin(); it != _tank.end(); ++it)
+    {
+      if ((*it)->_joyNum < 0)
+        continue;
+
+      (*it)->stop();
+
+      _joy = SDL_JoystickOpen((*it)->_joyNum);
 
       SDL_JoystickUpdate();
 
-      _hAxis = SDL_JoystickGetAxis(_joy, 0); // вертикальная ось - первая
-      _vAxis = SDL_JoystickGetAxis(_joy, SDL_JoystickNumAxes(_joy) - 1); // горизонтальная ось - последняя
-      _startBtn = SDL_JoystickGetButton(_joy, 9);
-      _fireBtn = SDL_JoystickGetButton(_joy, 2);
+      hAxis = SDL_JoystickGetAxis(_joy, 0); // вертикальная ось - первая
+      vAxis = SDL_JoystickGetAxis(_joy, SDL_JoystickNumAxes(_joy) - 1); // горизонтальная ось - последняя
+      startBtn = SDL_JoystickGetButton(_joy, 9);
+      fireBtn = SDL_JoystickGetButton(_joy, 2);
 
-      if (_vAxis < -20000) // UP button
+      if (vAxis < -20000) // UP button
         (*it)->moveTo(_up);
 
-      if (_vAxis > 20000) // DOWN button
+      if (vAxis > 20000) // DOWN button
         (*it)->moveTo(_down);
 
-      if (_hAxis < -20000) // LEFT button
+      if (hAxis < -20000) // LEFT button
         (*it)->moveTo(_left);
 
-      if (_hAxis > 20000) // RIGHT button
+      if (hAxis > 20000) // RIGHT button
         (*it)->moveTo(_right);
 
-      if (_fireBtn) // FIRE button
+      if (fireBtn) // FIRE button
         (*it)->shoot();
     }
   }
@@ -655,7 +703,7 @@ private:
 
   osg::ref_ptr<osg::Node> _scene;
   osg::ref_ptr<osgViewer::Viewer> _viewer;
-  osg::Vec2i mapSize; // размер карты
+  osg::Vec2i _mapSize; // размер карты в тайлах
   QString _fileName; // строка для имени файла с картой
   tile mapMaker;
 
@@ -665,6 +713,7 @@ private:
   std::map<int, bool> _pressedKeys; // определяет зажаты ли клавиши клавиатуры в текущий момент
   int _playerNum = 0; // текущее кол-во игроков
   SDL_Joystick* _joy;
+  direction _up, _down, _left, _right; // направления движения зависящие от положения камеры
 
   std::vector<osg::ref_ptr<tank>> _tank; // вектор содержащий все танки
   std::list<osg::Node*> _toDelete; // очередь на удаление

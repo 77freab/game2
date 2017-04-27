@@ -63,6 +63,8 @@ void tank::changeType()
   state->setTextureAttributeAndModes(0, texture.get());
 
   _rMt->addChild(node.get());
+
+  _needTypeChange = false;
 }
 
 void tank::moveTo(direction dir)
@@ -291,7 +293,7 @@ void tank::shoot()
     else if (_curDir == direction::RIGHT)
       prjDir = blockType::PRJ_RIGHT;
 
-    _projectile = new projectile(_x - 4, 0, _z - 4, _curDir, prjDir, 
+    _projectile = new projectile(_x - 4, -4, _z - 4, _curDir, prjDir, 
       this, _tank, _typeMap, _tileMap, _toDelete, _prjMaker);
     this->getParent(0)->addChild(_projectile.get());
     _projectile->setName(this->getName() + " - projectile");
@@ -306,7 +308,7 @@ projectile::projectile(int x, int y, int z, direction dir,
   std::map<osg::Vec2i, blockType>* typeMap,
   std::map<osg::Vec2i, osg::ref_ptr<osg::MatrixTransform>>* tileMap,
   std::list<osg::Node*>* toDelete, tile* prjMaker)
-  : MatrixTransform(*prjMaker->getTile(x, y, z, prjDir, true)), _dir(dir), _x(x), _z(z), _clb(new projectileCallback),
+  : MatrixTransform(*prjMaker->getTile(x, y, z, prjDir, true)), _dir(dir), _x(x), _y(y), _z(z), _clb(new projectileCallback),
   _parentTank(parentTank), _tank(tank), _typeMap(typeMap), _tileMap(tileMap), _toDelete(toDelete)
 {
   this->setDataVariance(osg::Object::DYNAMIC);
@@ -327,7 +329,7 @@ projectile::projectile(int x, int y, int z, direction dir,
         _z += prjSpeed;
         _collisionPt1[1] = (_z + 8) / 8;
         _collisionPt2[1] = (_z + 8) / 8;
-        mT.makeTranslate(_x, 0, _z);
+        mT.makeTranslate(_x, _y, _z);
         this->setMatrix(mT);
       };
       break;
@@ -341,7 +343,7 @@ projectile::projectile(int x, int y, int z, direction dir,
         _z -= prjSpeed;
         _collisionPt1[1] = (_z) / 8;
         _collisionPt2[1] = (_z) / 8;
-        mT.makeTranslate(_x, 0, _z);
+        mT.makeTranslate(_x, _y, _z);
         this->setMatrix(mT);
       };
       break;
@@ -355,7 +357,7 @@ projectile::projectile(int x, int y, int z, direction dir,
         _x -= prjSpeed;
         _collisionPt1[0] = (_x) / 8;
         _collisionPt2[0] = (_x) / 8;
-        mT.makeTranslate(_x, 0, _z);
+        mT.makeTranslate(_x, _y, _z);
         this->setMatrix(mT);
       };
       break;
@@ -369,7 +371,7 @@ projectile::projectile(int x, int y, int z, direction dir,
         _x += prjSpeed;
         _collisionPt1[0] = (_x + 8) / 8;
         _collisionPt2[0] = (_x + 8) / 8;
-        mT.makeTranslate(_x, 0, _z);
+        mT.makeTranslate(_x, _y, _z);
         this->setMatrix(mT);
       };
       break;

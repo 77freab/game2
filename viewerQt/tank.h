@@ -134,6 +134,7 @@ private:
   tank* _parentTank;
   std::vector<osg::ref_ptr<tank>>* _tank;
   int _x;
+  int _y;
   int _z;
   osg::ref_ptr<projectileCallback> _clb;
 };
