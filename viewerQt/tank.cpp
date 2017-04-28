@@ -269,6 +269,7 @@ void tank::enable()
 void tank::disable()
 {
   this->removeUpdateCallback(_clb); // чтоб не мог двигаться
+  _clb = nullptr;
   _timer->setRemainingTime(-1); // чтоб не мог стрелять
   _enabled = false; // чтоб коллизии для него не расчитывались
 }
@@ -439,8 +440,8 @@ void projectile::move()
               _parentTank->getParent(0)->addChild(bng);
 
               // уничтожаем танк
-              (*it)->disable(); // отключаем его
-              _toDelete->push_back((*it)); // ставим в очередь на удаление со сцены
+              attackedEnemy->disable(); // отключаем его
+              _toDelete->push_back(attackedEnemy); // ставим в очередь на удаление со сцены
 
               // увеличиваем число убийств
               emit _parentTank->smbdyKilled(++_parentTank->_killCount);

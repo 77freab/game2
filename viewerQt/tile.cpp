@@ -29,6 +29,8 @@ osg::ref_ptr<osg::Geode> tile::makeNewTile(blockType bt, bool pr)
     normals->push_back(osg::Vec3(0, -1, 0));
 
     // координаты текстуры
+    texCoord->setBinding(osg::Array::BIND_PER_VERTEX);
+
     texCoord->push_back(osg::Vec2(0, 0));
     texCoord->push_back(osg::Vec2(1, 0));
     texCoord->push_back(osg::Vec2(1, 1));
@@ -135,13 +137,20 @@ osg::ref_ptr<osg::Geode> tile::makeNewTile(blockType bt, bool pr)
     osg::ref_ptr<osg::Vec3Array> hNormals = new osg::Vec3Array;
     hNormals->setBinding(osg::Array::BIND_OVERALL);
 
+    //texCoord->push_back(osg::Vec2(0, 0));
+    //texCoord->push_back(osg::Vec2(1, 0));
+    //texCoord->push_back(osg::Vec2(1, 1));
+    //texCoord->push_back(osg::Vec2(0, 1));
+
+    
+
     if (bt == blockType::PRJ_DOWN || bt == blockType::PRJ_UP)
     {
       // вершины
-      hVertices->push_back(osg::Vec3(4,  4, 0)); // 1
-      hVertices->push_back(osg::Vec3(4, -4, 0)); // 2
-      hVertices->push_back(osg::Vec3(4, -4, 8)); // 3
-      hVertices->push_back(osg::Vec3(4,  4, 8)); // 4
+      hVertices->push_back(osg::Vec3(4, -4, 0)); // 1
+      hVertices->push_back(osg::Vec3(4,  4, 0)); // 2
+      hVertices->push_back(osg::Vec3(4,  4, 8)); // 3
+      hVertices->push_back(osg::Vec3(4, -4, 8)); // 4
 
       // нормаль
       hNormals->push_back(osg::Vec3(1, 0, 0));
@@ -157,7 +166,6 @@ osg::ref_ptr<osg::Geode> tile::makeNewTile(blockType bt, bool pr)
       // нормаль
       hNormals->push_back(osg::Vec3(0, 0, 1));
     }
-      
 
     // геометрия
     hGeom->setVertexArray(hVertices);

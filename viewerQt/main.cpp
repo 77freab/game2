@@ -310,9 +310,10 @@ public:
 
   void spawnPlayer(osg::ref_ptr<tank> tank)
   {
+    // если надо меняем тип
     if (tank->_needTypeChange)
       tank->changeType();
-
+    
     int x = rand() % (_mapSize[0] - 8) + 3;
     int z = rand() % (_mapSize[1] - 6) + 3;
 
@@ -327,9 +328,12 @@ public:
     m.makeTranslate(x * 8, 0, z * 8);
     tank->setMatrix(m);
 
-    // добавляем на сцену а активируем
-    _scene->asGroup()->addChild(tank.get());
-    tank->enable();
+    if (!_scene->asGroup()->containsNode(tank))
+    {
+      // добавляем на сцену а активируем
+      _scene->asGroup()->addChild(tank.get());
+      tank->enable();
+    }
   }
 
   void restart()
@@ -342,7 +346,7 @@ public:
 
     //_playerNum = 0; // смешной баг с ускорением
 
-    osg::Node* temp;
+    osg::ref_ptr<osg::Node> temp;
     if ((temp = createScene()) != nullptr)
     {
       // отключаем все танки
