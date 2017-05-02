@@ -1,7 +1,6 @@
 #pragma once
 
 #include "tile.h"
-//#include "projectile.h"
 #include <QDeadlineTimer>
 #include <QObject>
 
