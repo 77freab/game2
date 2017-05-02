@@ -1,6 +1,8 @@
 #include "tile.h"
 #include <QFile>
 #include <osgDB/ReadFile>
+#include <osg/Texture2D>
+#include <osg/MatrixTransform>
 
 osg::ref_ptr<osg::Geode> tile::makeNewTile(blockType bt, bool pr)
 {
@@ -44,6 +46,7 @@ osg::ref_ptr<osg::Geode> tile::makeNewTile(blockType bt, bool pr)
     geom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::QUADS, 8, 4));
     geom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::QUADS, 12, 4));
     geom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::QUADS, 16, 4));
+    geom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::QUADS, 20, 4));
 
     vertices->push_back(osg::Vec3(0,  0, 0)); // 1
     vertices->push_back(osg::Vec3(8,  0, 0)); // 2
@@ -70,6 +73,11 @@ osg::ref_ptr<osg::Geode> tile::makeNewTile(blockType bt, bool pr)
     vertices->push_back(osg::Vec3(8, -8, 8)); // 19
     vertices->push_back(osg::Vec3(0, -8, 8)); // 20
 
+    vertices->push_back(osg::Vec3(0,  0, 0)); // 21
+    vertices->push_back(osg::Vec3(8,  0, 0)); // 22
+    vertices->push_back(osg::Vec3(8,  0, 8)); // 23
+    vertices->push_back(osg::Vec3(0,  0, 8)); // 24
+
     // нормали
     normals->setBinding(osg::Array::BIND_PER_PRIMITIVE_SET);
 
@@ -78,34 +86,18 @@ osg::ref_ptr<osg::Geode> tile::makeNewTile(blockType bt, bool pr)
     normals->push_back(osg::Vec3( 0,  0,  1)); // 3
     normals->push_back(osg::Vec3(-1,  0,  0)); // 4
     normals->push_back(osg::Vec3( 0, -1,  0)); // 5
+    normals->push_back(osg::Vec3( 0,  1,  0)); // 6
 
     // координаты текстуры
     texCoord->setBinding(osg::Array::BIND_PER_PRIMITIVE_SET);
 
-    texCoord->push_back(osg::Vec2(0, 0));
-    texCoord->push_back(osg::Vec2(1, 0));
-    texCoord->push_back(osg::Vec2(1, 1));
-    texCoord->push_back(osg::Vec2(0, 1));
-
-    texCoord->push_back(osg::Vec2(0, 0));
-    texCoord->push_back(osg::Vec2(1, 0));
-    texCoord->push_back(osg::Vec2(1, 1));
-    texCoord->push_back(osg::Vec2(0, 1));
-
-    texCoord->push_back(osg::Vec2(0, 0));
-    texCoord->push_back(osg::Vec2(1, 0));
-    texCoord->push_back(osg::Vec2(1, 1));
-    texCoord->push_back(osg::Vec2(0, 1));
-
-    texCoord->push_back(osg::Vec2(0, 0));
-    texCoord->push_back(osg::Vec2(1, 0));
-    texCoord->push_back(osg::Vec2(1, 1));
-    texCoord->push_back(osg::Vec2(0, 1));
-
-    texCoord->push_back(osg::Vec2(0, 0));
-    texCoord->push_back(osg::Vec2(1, 0));
-    texCoord->push_back(osg::Vec2(1, 1));
-    texCoord->push_back(osg::Vec2(0, 1));
+    for (int i = 0; i < 6; i++)
+    {
+      texCoord->push_back(osg::Vec2(0, 0));
+      texCoord->push_back(osg::Vec2(1, 0));
+      texCoord->push_back(osg::Vec2(1, 1));
+      texCoord->push_back(osg::Vec2(0, 1));
+    }
   }
 
   // геометрия
@@ -118,7 +110,6 @@ osg::ref_ptr<osg::Geode> tile::makeNewTile(blockType bt, bool pr)
   // установка текстуры
   osg::ref_ptr<osg::Image> image = osgDB::readImageFile(blockTex[static_cast<int>(bt)]);
   osg::ref_ptr<osg::Texture2D> texture = new osg::Texture2D(image);
-  //texture->setImage(image);
   //texture->setUnRefImageDataAfterApply(true);
   texture->setWrap(osg::Texture2D::WRAP_T, osg::Texture2D::CLAMP_TO_EDGE);
   texture->setFilter(osg::Texture2D::MAG_FILTER, osg::Texture2D::NEAREST);
@@ -136,13 +127,6 @@ osg::ref_ptr<osg::Geode> tile::makeNewTile(blockType bt, bool pr)
     osg::ref_ptr<osg::Vec3Array> hVertices = new osg::Vec3Array;
     osg::ref_ptr<osg::Vec3Array> hNormals = new osg::Vec3Array;
     hNormals->setBinding(osg::Array::BIND_OVERALL);
-
-    //texCoord->push_back(osg::Vec2(0, 0));
-    //texCoord->push_back(osg::Vec2(1, 0));
-    //texCoord->push_back(osg::Vec2(1, 1));
-    //texCoord->push_back(osg::Vec2(0, 1));
-
-    
 
     if (bt == blockType::PRJ_DOWN || bt == blockType::PRJ_UP)
     {

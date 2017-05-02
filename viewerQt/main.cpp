@@ -7,6 +7,7 @@
 #include <QFileDialog>
 #include <QMenu>
 #include <QMessageBox>
+#include <QTimer>
 
 #include <osgViewer/ViewerEventHandlers>
 #include <osgDB/ReadFile>
@@ -129,13 +130,13 @@ public:
   {
     // controlDevice = -2 is WASD + Space
     // controlDevice = -1 is Arrows + Num 0
-    int swapControl = _tank[player]->_joyNum;
+    int swapControl = _tank[player]->GetControlDevice();
 
     for (int i = 0; i < _playerNum; i++)
     {
-      if (_tank[i]->_joyNum == controlDevice)
+      if (_tank[i]->GetControlDevice() == controlDevice)
       {
-        _tank[i]->_joyNum = swapControl;
+        _tank[i]->SetControlDevice(swapControl);
         QPushButton* btn = dynamic_cast<QPushButton*>(_playersList->itemWidget(_playersList->topLevelItem(i), 3));
         btn->setText(controlsName(swapControl));
         if (swapControl == -2)
@@ -149,7 +150,7 @@ public:
         _arrowsTank = nullptr;
     }
 
-    _tank[player]->_joyNum = controlDevice;
+    _tank[player]->SetControlDevice(controlDevice);
 
     if (controlDevice == -2)
       _wasdTank = _tank[player];
@@ -170,7 +171,7 @@ public:
         bool pr = true;
         for (auto it = _tank.cbegin(); it != _tank.cend(); it++)
         {
-          if ((*it)->_joyNum == freeControl)
+          if ((*it)->GetControlDevice() == freeControl)
             pr = false;
         }
         if (pr)
@@ -196,9 +197,9 @@ public:
       connect(act, &QAction::triggered, tankTypeBtn, [tankTypeBtn, act] { tankTypeBtn->setText(act->text()); });
       connect(act, &QAction::triggered, this, [this, player] 
       { 
-        if (_tank[player]->_type != tank::type::LIGHT)
+        if (_tank[player]->GetType() != tank::type::LIGHT)
         {
-          _tank[player]->_needTypeChange = true;
+          _tank[player]->SetNeedTypeChange();
           _playersList->itemWidget(_playersList->topLevelItem(player), 4)->setEnabled(true);
         }
       });
@@ -210,9 +211,9 @@ public:
       connect(act, &QAction::triggered, tankTypeBtn, [tankTypeBtn, act] { tankTypeBtn->setText(act->text()); });
       connect(act, &QAction::triggered, this, [this, player] 
       { 
-        if (_tank[player]->_type != tank::type::HEAVY)
+        if (_tank[player]->GetType() != tank::type::HEAVY)
         {
-          _tank[player]->_needTypeChange = true;
+          _tank[player]->SetNeedTypeChange();
           _playersList->itemWidget(_playersList->topLevelItem(player), 4)->setEnabled(true);
         }
       });
@@ -223,11 +224,11 @@ public:
       _playersList->setItemWidget(item, 2, tankTypeBtn);
 
       // управление
-      QPushButton* controlsBtn = new QPushButton(controlsName(_tank.back()->_joyNum));
+      QPushButton* controlsBtn = new QPushButton(controlsName(_tank.back()->GetControlDevice()));
       // по умолчанию танки 0 и 1 управляются с WASD и стрелок соответственно
-      if (_tank.back()->_joyNum == -2)
+      if (_tank.back()->GetControlDevice() == -2)
         _wasdTank = _tank.back();
-      if (_tank.back()->_joyNum == -1)
+      if (_tank.back()->GetControlDevice() == -1)
         _arrowsTank = _tank.back();
 
       QMenu* controlsMenu = new QMenu;
@@ -311,14 +312,14 @@ public:
   void spawnPlayer(osg::ref_ptr<tank> tank)
   {
     // если надо меняем тип
-    if (tank->_needTypeChange)
-      tank->changeType();
+    if (tank->NeedTypeChange())
+      tank->ChangeType();
     
     int x = rand() % (_mapSize[0] - 8) + 3;
     int z = rand() % (_mapSize[1] - 6) + 3;
 
-    tank->_x = x * 8;
-    tank->_z = z * 8;
+    tank->SetXCoord(x * 8);
+    tank->SetZCoord(z * 8);
 
     // расчищаем место дял спавна
     clearPlaceForTank(x, z);
@@ -332,7 +333,7 @@ public:
     {
       // добавляем на сцену а активируем
       _scene->asGroup()->addChild(tank.get());
-      tank->enable();
+      tank->Enable();
     }
   }
 
@@ -351,7 +352,7 @@ public:
     {
       // отключаем все танки
       for (auto it = _tank.cbegin(); it != _tank.cend(); it++)
-        (*it)->disable();
+        (*it)->Disable();
 
       // делаем кнопку спавна опять активной и обнуляем счетчик убийств
       for (int i = 0; i < _playersList->topLevelItemCount(); i++)
@@ -452,30 +453,30 @@ public:
           case(119) : // W
           {
             _pressedKeys[119] = true;
-            _wasdTank->moveTo(_up);
+            _wasdTank->SetMovingDirection(_up);
             break;
           }
           case(115) : // S
           {
             _pressedKeys[115] = true;
-            _wasdTank->moveTo(_down);
+            _wasdTank->SetMovingDirection(_down);
             break;
           }
           case(97) : // A
           {
             _pressedKeys[97] = true;
-            _wasdTank->moveTo(_left);
+            _wasdTank->SetMovingDirection(_left);
             break;
           }
           case(100) : // D
           {
             _pressedKeys[100] = true;
-            _wasdTank->moveTo(_right);
+            _wasdTank->SetMovingDirection(_right);
             break;
           }
           case(32) : // SPACE
           {
-            _wasdTank->shoot();
+            _wasdTank->Shoot();
             break;
           }
         }
@@ -486,30 +487,30 @@ public:
           case(osgGA::GUIEventAdapter::KEY_Up) : // up
           {
             _pressedKeys[65362] = true;
-            _arrowsTank->moveTo(_up);
+            _arrowsTank->SetMovingDirection(_up);
             break;
           }
           case(osgGA::GUIEventAdapter::KEY_Down) : // down
           {
             _pressedKeys[65364] = true;
-            _arrowsTank->moveTo(_down);
+            _arrowsTank->SetMovingDirection(_down);
             break;
           }
           case(osgGA::GUIEventAdapter::KEY_Left) : // left
           {
             _pressedKeys[65361] = true;
-            _arrowsTank->moveTo(_left);
+            _arrowsTank->SetMovingDirection(_left);
             break;
           }
           case(osgGA::GUIEventAdapter::KEY_Right) : // right
           {
             _pressedKeys[65363] = true;
-            _arrowsTank->moveTo(_right);
+            _arrowsTank->SetMovingDirection(_right);
             break;
           }
           case(osgGA::GUIEventAdapter::KEY_0) : // num0
           {
-            _arrowsTank->shoot(); 
+            _arrowsTank->Shoot(); 
             break;
           }
         }
@@ -523,21 +524,21 @@ public:
         {
           case(119) : // W
           case(115) : // S
-          case(97) : // A
+          case(97)  : // A
           case(100) : // D
           {
             _pressedKeys[key] = false;
             // если это была единственная нажатая клавиша то танк останавливается
             if (_pressedKeys[119])
-              _wasdTank->moveTo(_up);
+              _wasdTank->SetMovingDirection(_up);
             else if (_pressedKeys[115])
-              _wasdTank->moveTo(_down);
+              _wasdTank->SetMovingDirection(_down);
             else if (_pressedKeys[97])
-              _wasdTank->moveTo(_left);
+              _wasdTank->SetMovingDirection(_left);
             else if (_pressedKeys[100])
-              _wasdTank->moveTo(_right);
+              _wasdTank->SetMovingDirection(_right);
             else
-              _wasdTank->stop();
+              _wasdTank->Stop();
             break;
           }
         }
@@ -552,15 +553,15 @@ public:
             _pressedKeys[key] = false;
             // если это была единственная нажатая клавиша то танк останавливается
             if (_pressedKeys[65362])
-              _arrowsTank->moveTo(_up);
+              _arrowsTank->SetMovingDirection(_up);
             else if (_pressedKeys[65364])
-              _arrowsTank->moveTo(_down);
+              _arrowsTank->SetMovingDirection(_down);
             else if (_pressedKeys[65361])
-              _arrowsTank->moveTo(_left);
+              _arrowsTank->SetMovingDirection(_left);
             else if (_pressedKeys[65363])
-              _arrowsTank->moveTo(_right);
+              _arrowsTank->SetMovingDirection(_right);
             else
-              _arrowsTank->stop();
+              _arrowsTank->Stop();
             break;
           }
         }
@@ -663,12 +664,13 @@ public:
 
     for (auto it = _tank.cbegin(); it != _tank.end(); ++it)
     {
-      if ((*it)->_joyNum < 0)
+      // управление с клавиатуры обрабатывается не здесь
+      if ((*it)->GetControlDevice() < 0)
         continue;
 
-      (*it)->stop();
+      (*it)->Stop();
 
-      _joy = SDL_JoystickOpen((*it)->_joyNum);
+      _joy = SDL_JoystickOpen((*it)->GetControlDevice());
 
       SDL_JoystickUpdate();
 
@@ -678,19 +680,19 @@ public:
       fireBtn = SDL_JoystickGetButton(_joy, 2);
 
       if (vAxis < -20000) // UP button
-        (*it)->moveTo(_up);
+        (*it)->SetMovingDirection(_up);
 
       if (vAxis > 20000) // DOWN button
-        (*it)->moveTo(_down);
+        (*it)->SetMovingDirection(_down);
 
       if (hAxis < -20000) // LEFT button
-        (*it)->moveTo(_left);
+        (*it)->SetMovingDirection(_left);
 
       if (hAxis > 20000) // RIGHT button
-        (*it)->moveTo(_right);
+        (*it)->SetMovingDirection(_right);
 
       if (fireBtn) // FIRE button
-        (*it)->shoot();
+        (*it)->Shoot();
     }
   }
 

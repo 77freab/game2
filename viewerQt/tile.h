@@ -2,9 +2,8 @@
 
 #include <string>
 #include <osg/MatrixTransform>
-#include <osg/Texture2D>
-#include <osg/ref_ptr>
-#include <osg/Geode>
+//#include <osg/ref_ptr>
+//#include <osg/Geode>
 #include <QXmlStreamReader>
 
 enum class blockType
