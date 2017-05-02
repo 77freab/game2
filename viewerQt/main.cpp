@@ -373,7 +373,7 @@ public:
     osg::ref_ptr<osg::Group> scene = new osg::Group;
     scene->setName("main scene");
     int returnCode;
-    if ((returnCode = mapMaker.createMap(scene, _typeMap, _tileMap, _fileName, _mapSize)) == -2)
+    if ((returnCode = mapMaker.CreateMap(scene, _typeMap, _tileMap, _fileName, _mapSize)) == -2)
     {
       QMessageBox::warning(this, "file error",
         QString::fromLocal8Bit("Кривой файл"), QMessageBox::Ok);
@@ -711,7 +711,7 @@ private:
   osg::ref_ptr<osgViewer::Viewer> _viewer;
   osg::Vec2i _mapSize; // размер карты в тайлах
   QString _fileName; // строка для имени файла с картой
-  tile mapMaker;
+  tileMaker mapMaker;
 
   int _numJoysticks; // кол-во подключенных джойстиков
   tank* _wasdTank = nullptr; // ссылка на танк управляемый WASD

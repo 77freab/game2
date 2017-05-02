@@ -20,12 +20,12 @@ enum class blockType
   PRJ_RIGHT = 9
 };
 
-class tile
+class tileMaker
 {
 public:
-  tile();
-  osg::ref_ptr<osg::MatrixTransform> getTile(int x, int y, int z, blockType bt, bool pr = false);
-  int createMap(osg::ref_ptr<osg::Group> scene, 
+  tileMaker();
+  osg::ref_ptr<osg::MatrixTransform> GetTile(int x, int y, int z, blockType bt, bool pr = false);
+  int CreateMap(osg::ref_ptr<osg::Group> scene, 
     std::map<osg::Vec2i, blockType>& typeMap,
     std::map<osg::Vec2i, osg::ref_ptr<osg::MatrixTransform>>& tileMap, 
     QString fileName, osg::Vec2i& mapSize);

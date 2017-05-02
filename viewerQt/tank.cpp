@@ -72,7 +72,7 @@ public:
     this->addChild(_geode.get());
   }
 
-  void bang::makeBang()
+  void bang::MakeBang()
   {
     int temp = 10;
     _roughTimer++;
@@ -122,7 +122,7 @@ private:
 void bangCallback::operator()(osg::Node* nd, osg::NodeVisitor* ndv)
 {
   bang* bng = dynamic_cast<bang*>(nd);
-  bng->makeBang();
+  bng->MakeBang();
   traverse(nd, ndv);
 }
 
@@ -146,8 +146,8 @@ public:
     std::vector<osg::ref_ptr<tank>>* tank,
     std::map<osg::Vec2i, blockType>* typeMap,
     std::map<osg::Vec2i, osg::ref_ptr<osg::MatrixTransform>>* tileMap,
-    std::list<osg::Node*>* toDelete, tile* prjMaker)
-    : MatrixTransform(*prjMaker->getTile(x, y, z, prjDir, true)), _dir(dir), _x(x), _y(y), _z(z), _clb(new projectileCallback),
+    std::list<osg::Node*>* toDelete, tileMaker* prjMaker)
+    : MatrixTransform(*prjMaker->GetTile(x, y, z, prjDir, true)), _dir(dir), _x(x), _y(y), _z(z), _clb(new projectileCallback),
     _parentTank(parentTank), _tank(tank), _typeMap(typeMap), _tileMap(tileMap), _toDelete(toDelete)
   {
     this->setDataVariance(osg::Object::DYNAMIC);
@@ -163,7 +163,7 @@ public:
     {
       _collisionPt1 = { (_x + 2) / 8, (_z + 8) / 8 };
       _collisionPt2 = { (_x + 6) / 8, (_z + 8) / 8 };
-      moving = [this, prjSpeed]
+      Moving = [this, prjSpeed]
       {
         _z += prjSpeed;
         _collisionPt1[1] = (_z + 8) / 8;
@@ -177,7 +177,7 @@ public:
     {
       _collisionPt1 = { (_x + 2) / 8, (_z) / 8 };
       _collisionPt2 = { (_x + 6) / 8, (_z) / 8 };
-      moving = [this, prjSpeed]
+      Moving = [this, prjSpeed]
       {
         _z -= prjSpeed;
         _collisionPt1[1] = (_z) / 8;
@@ -191,7 +191,7 @@ public:
     {
       _collisionPt1 = { (_x) / 8, (_z + 2) / 8 };
       _collisionPt2 = { (_x) / 8, (_z + 6) / 8 };
-      moving = [this, prjSpeed]
+      Moving = [this, prjSpeed]
       {
         _x -= prjSpeed;
         _collisionPt1[0] = (_x) / 8;
@@ -205,7 +205,7 @@ public:
     {
       _collisionPt1 = { (_x + 8) / 8, (_z + 2) / 8 };
       _collisionPt2 = { (_x + 8) / 8, (_z + 6) / 8 };
-      moving = [this, prjSpeed]
+      Moving = [this, prjSpeed]
       {
         _x += prjSpeed;
         _collisionPt1[0] = (_x + 8) / 8;
@@ -218,7 +218,7 @@ public:
     }
   }
 
-  void projectile::move()
+  void projectile::TryToMove()
   {
     std::map<osg::Vec2i, blockType>::const_iterator a, b;
     bool aGo = false, bGo = false, projDel = false;
@@ -298,10 +298,10 @@ public:
     }
 
     if (aGo && bGo && !projDel)
-      moving();
+      Moving();
   }
 
-  std::function<void()> moving;
+  std::function<void()> Moving;
 
 private:
   std::map<osg::Vec2i, blockType>* _typeMap;
@@ -323,7 +323,7 @@ void projectileCallback::operator()(osg::Node* nd, osg::NodeVisitor* ndv)
 {
   projectile* prj = dynamic_cast<projectile*>(nd);
   if (!delay)
-    prj->move();
+    prj->TryToMove();
   delay = !delay;
   traverse(nd, ndv);
 }
@@ -338,7 +338,7 @@ tank::tank(int x, int z, std::string texNum, int controlDevice,
   std::vector<osg::ref_ptr<tank>>* tank,
   std::map<osg::Vec2i, blockType>* typeMap,
   std::map<osg::Vec2i, osg::ref_ptr<osg::MatrixTransform>>* tileMap,
-  std::list<osg::Node*>* toDelete, tile* prjMaker)
+  std::list<osg::Node*>* toDelete, tileMaker* prjMaker)
   : _timer(new QDeadlineTimer(SHOOT_TIMEOUT)), _rMt(new MatrixTransform),
   _typeMap(typeMap), _tileMap(tileMap), _toDelete(toDelete), _texNum(texNum),
   _tank(tank), _controlDevice(controlDevice), _x(x), _z(z), _prjMaker(prjMaker), _type(type::LIGHT)

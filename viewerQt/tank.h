@@ -36,7 +36,7 @@ public:
     std::vector<osg::ref_ptr<tank>>* tank,
     std::map<osg::Vec2i, blockType>* typeMap,
     std::map<osg::Vec2i, osg::ref_ptr<osg::MatrixTransform>>* tileMap,
-    std::list<osg::Node*>* toDelete, tile* prjMaker);
+    std::list<osg::Node*>* toDelete, tileMaker* prjMaker);
   void Move();
   void Shoot();
   void Enable();
@@ -76,7 +76,7 @@ private:
   std::map<osg::Vec2i, osg::ref_ptr<osg::MatrixTransform>>* _tileMap;
   std::list<osg::Node*>* _toDelete;
   std::string _texNum;
-  tile* _prjMaker;
+  tileMaker* _prjMaker;
   osg::Vec2i _collisionPt1;
   osg::Vec2i _collisionPt2;
   osg::ref_ptr<osg::MatrixTransform> _rMt;

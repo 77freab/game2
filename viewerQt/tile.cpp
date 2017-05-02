@@ -4,7 +4,7 @@
 #include <osg/Texture2D>
 #include <osg/MatrixTransform>
 
-osg::ref_ptr<osg::Geode> tile::makeNewTile(blockType bt, bool pr)
+osg::ref_ptr<osg::Geode> tileMaker::makeNewTile(blockType bt, bool pr)
 {
   // цвет
   osg::ref_ptr<osg::Vec4Array> color = new osg::Vec4Array;
@@ -162,7 +162,7 @@ osg::ref_ptr<osg::Geode> tile::makeNewTile(blockType bt, bool pr)
   return geode;
 }
 
-osg::ref_ptr<osg::MatrixTransform> tile::getTile(int x, int y, int z, blockType bt, bool pr)
+osg::ref_ptr<osg::MatrixTransform> tileMaker::GetTile(int x, int y, int z, blockType bt, bool pr)
 {
   osg::ref_ptr<osg::MatrixTransform> mt = new osg::MatrixTransform;
   osg::Matrix m;
@@ -177,7 +177,7 @@ osg::ref_ptr<osg::MatrixTransform> tile::getTile(int x, int y, int z, blockType 
   return mt;
 }
 
-tile::tile()
+tileMaker::tileMaker()
 {
   blockTex.push_back("./Resources/blocks/BORDER.png");
   blockTex.push_back("./Resources/blocks/BRICK.png");
@@ -192,7 +192,7 @@ tile::tile()
   blockTex.push_back("./Resources/projectile/RIGHT.png");
 }
 
-void tile::skipUnknownElement(QXmlStreamReader& reader)
+void tileMaker::skipUnknownElement(QXmlStreamReader& reader)
 {
   reader.readNext();
   while (!reader.atEnd())
@@ -220,7 +220,7 @@ void tile::skipUnknownElement(QXmlStreamReader& reader)
   }
 }
 
-int tile::createMap(osg::ref_ptr<osg::Group> scene,
+int tileMaker::CreateMap(osg::ref_ptr<osg::Group> scene,
   std::map<osg::Vec2i, blockType>& typeMap,
   std::map<osg::Vec2i, osg::ref_ptr<osg::MatrixTransform>>& tileMap, 
   QString fileName, osg::Vec2i& mapSize)
@@ -346,9 +346,9 @@ int tile::createMap(osg::ref_ptr<osg::Group> scene,
       if ((it = typeMap.find({ x, z })) != typeMap.end())
       {
         if ((*it).second == blockType::WATER || (*it).second == blockType::ICE)
-          tileMap[{ x, z }] = getTile(x * 8, 0, z * 8, (*it).second, true);
+          tileMap[{ x, z }] = GetTile(x * 8, 0, z * 8, (*it).second, true);
         else
-          tileMap[{ x, z }] = getTile(x * 8, 0, z * 8, (*it).second);
+          tileMap[{ x, z }] = GetTile(x * 8, 0, z * 8, (*it).second);
         scene->addChild(tileMap[{ x, z }]);
       }
   return 0;
