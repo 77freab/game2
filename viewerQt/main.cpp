@@ -7,10 +7,8 @@
 #include <QFileDialog>
 #include <QMenu>
 #include <QMessageBox>
-#include <QTimer>
 
 #include <osgViewer/ViewerEventHandlers>
-#include <osgDB/ReadFile>
 #include <osgGA/TrackballManipulator>
 #include <osgQt/GraphicsWindowQt>
 #include <osgUtil/Optimizer>
@@ -176,7 +174,8 @@ public:
         }
         if (pr)
         {
-          _tank.push_back(new tank(0, 0, std::to_string(player % 13), freeControl, &_tank, &_typeMap, &_tileMap, &_toDelete, &mapMaker));
+          _tank.push_back(new tank(0, 0, std::to_string(player % 13), freeControl, &_tank, 
+            &_typeMap, &_tileMap, &_toDelete));
           break;
         }
       }
@@ -264,7 +263,7 @@ public:
       _playersList->setItemWidget(item, 4, spawnBtn);
 
       // при убистве счетчик будет обновляться
-      connect(_tank[player], &tank::smbdyKilled, this, [this, player](int killCount)
+      connect(_tank[player], &tank::iKilledSomebody, this, [this, player](int killCount)
         { _playersList->topLevelItem(player)->setText(1, QString::number(killCount)); });
       // после уничтожения танк будет респавниться через какое-то время
       connect(_tank[player], &tank::iNeedRespawn, this, &ViewerWidget::spawnPlayer);
@@ -711,7 +710,7 @@ private:
   osg::ref_ptr<osgViewer::Viewer> _viewer;
   osg::Vec2i _mapSize; // размер карты в тайлах
   QString _fileName; // строка для имени файла с картой
-  tileMaker mapMaker;
+  mapBuilder mapMaker;
 
   int _numJoysticks; // кол-во подключенных джойстиков
   tank* _wasdTank = nullptr; // ссылка на танк управляемый WASD

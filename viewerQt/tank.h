@@ -1,8 +1,10 @@
 #pragma once
 
-#include "tile.h"
+#include "mapBuilder.h"
 #include <QDeadlineTimer>
+#include <QTimer>
 #include <QObject>
+#include <osgDB/ReadFile>
 
 class projectile;
 
@@ -32,11 +34,9 @@ public:
     HEAVY = 1
   };
 
-  tank(int x, int z, std::string texNum, int controlDevice,
-    std::vector<osg::ref_ptr<tank>>* tank,
-    std::map<osg::Vec2i, blockType>* typeMap,
-    std::map<osg::Vec2i, osg::ref_ptr<osg::MatrixTransform>>* tileMap,
-    std::list<osg::Node*>* toDelete, tileMaker* prjMaker);
+  tank(int x, int z, std::string texNum, int controlDevice, std::vector<osg::ref_ptr<tank>>* tank,
+    std::map<osg::Vec2i, blockType>* typeMap, std::map<osg::Vec2i, 
+    osg::ref_ptr<osg::MatrixTransform>>* tileMap, std::list<osg::Node*>* toDelete);
   void Move();
   void Shoot();
   void Enable();
@@ -58,7 +58,7 @@ public:
   const int GetZCoord() const;
   const int AddKill();
 signals:
-  void smbdyKilled(int killCount);
+  void iKilledSomebody(int killCount);
   void iNeedRespawn(osg::ref_ptr<tank> myself);
 private:
   bool _needTypeChange = false;
@@ -76,7 +76,6 @@ private:
   std::map<osg::Vec2i, osg::ref_ptr<osg::MatrixTransform>>* _tileMap;
   std::list<osg::Node*>* _toDelete;
   std::string _texNum;
-  tileMaker* _prjMaker;
   osg::Vec2i _collisionPt1;
   osg::Vec2i _collisionPt2;
   osg::ref_ptr<osg::MatrixTransform> _rMt;

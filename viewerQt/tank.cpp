@@ -1,11 +1,9 @@
 #include "tank.h"
-#include <osgDB/ReadFile>
 #include <osg/Texture2D>
 #include <osg/ref_ptr>
 #include <osg/Geode>
 #include <osg/Geometry>
 #include <osg/MatrixTransform>
-#include <QTimer>
 #include <vector>
 #include <functional>
 #include <map>
@@ -23,88 +21,8 @@ public:
 class bang : public osg::MatrixTransform
 {
 public:
-  bang::bang(int x, int y, int z, std::list<osg::Node*>* toDelete)
-    : _geode(new osg::Geode), _normals(new osg::Vec3Array), _geom(new osg::Geometry),
-    _vertices(new osg::Vec3Array), _color(new osg::Vec4Array), _texCoord(new osg::Vec2Array),
-    _texture(new osg::Texture2D), _image(osgDB::readImageFile("./Resources/bang.png")),
-    _toDelete(toDelete), _clb(new bangCallback)
-  {
-    this->setDataVariance(osg::Object::DYNAMIC);
-    this->setUpdateCallback(_clb);
-
-    osg::Matrix m;
-    m.makeTranslate(x, y, z);
-    this->setMatrix(m);
-
-    _geom->setColorBinding(osg::Geometry::BIND_OVERALL);
-    _color->push_back(osg::Vec4(1.f, 1.f, 1.f, 1.f));
-    _geom->setColorArray(_color.get());
-
-    _vertices->push_back(osg::Vec3(-8, 0, -8)); // 1
-    _vertices->push_back(osg::Vec3(8, 0, -8)); // 2
-    _vertices->push_back(osg::Vec3(8, 0, 8)); // 3
-    _vertices->push_back(osg::Vec3(-8, 0, 8)); // 4
-
-    _geom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::QUADS, 0, 4));
-
-    _geom->setVertexArray(_vertices.get());
-
-    _normals->setBinding(osg::Array::BIND_OVERALL);
-    _normals->push_back(osg::Vec3(0, -1, 0));
-
-    _geom->setNormalArray(_normals.get());
-
-    _texCoord->push_back(osg::Vec2(2. / 3, 0));
-    _texCoord->push_back(osg::Vec2(1, 0));
-    _texCoord->push_back(osg::Vec2(1, 1));
-    _texCoord->push_back(osg::Vec2(2. / 3, 1));
-
-    _geom->setTexCoordArray(0, _texCoord.get(), osg::Array::Binding::BIND_PER_VERTEX);
-
-    _texture->setImage(_image);
-    _texture->setWrap(osg::Texture2D::WRAP_T, osg::Texture2D::CLAMP_TO_EDGE);
-    _texture->setFilter(osg::Texture2D::MAG_FILTER, osg::Texture2D::NEAREST);
-    osg::StateSet* state = _geom->getOrCreateStateSet();
-    state->setTextureAttributeAndModes(0, _texture);
-    state->setRenderingHint(osg::StateSet::TRANSPARENT_BIN);
-
-    _geode->addDrawable(_geom.get());
-    this->addChild(_geode.get());
-  }
-
-  void bang::MakeBang()
-  {
-    int temp = 10;
-    _roughTimer++;
-    if (_roughTimer == temp)
-    {
-      _texCoord = new osg::Vec2Array;
-
-      _texCoord->push_back(osg::Vec2(1. / 3, 0));
-      _texCoord->push_back(osg::Vec2(2. / 3, 0));
-      _texCoord->push_back(osg::Vec2(2. / 3, 1));
-      _texCoord->push_back(osg::Vec2(1. / 3, 1));
-
-      _geom->setTexCoordArray(0, _texCoord.get(), osg::Array::Binding::BIND_PER_VERTEX);
-    }
-    if (_roughTimer == temp * 2)
-    {
-      _texCoord = new osg::Vec2Array;
-
-      _texCoord->push_back(osg::Vec2(0, 0));
-      _texCoord->push_back(osg::Vec2(1. / 3, 0));
-      _texCoord->push_back(osg::Vec2(1. / 3, 1));
-      _texCoord->push_back(osg::Vec2(0, 1));
-
-      _geom->setTexCoordArray(0, _texCoord.get(), osg::Array::Binding::BIND_PER_VERTEX);
-    }
-    if (_roughTimer == temp * 3)
-    {
-      _toDelete->push_back(this);
-      this->removeUpdateCallback(_clb);
-    }
-  }
-
+  bang(int x, int y, int z, std::list<osg::Node*>* toDelete);
+  void AnimateBang();
 private:
   osg::ref_ptr<osg::Geode> _geode;
   osg::ref_ptr<osg::Geometry> _geom;
@@ -119,10 +37,94 @@ private:
   osg::ref_ptr<bangCallback> _clb;
 };
 
+// конструктор
+bang::bang(int x, int y, int z, std::list<osg::Node*>* toDelete)
+  : _geode(new osg::Geode), _normals(new osg::Vec3Array), _geom(new osg::Geometry),
+  _vertices(new osg::Vec3Array), _color(new osg::Vec4Array), _texCoord(new osg::Vec2Array),
+  _texture(new osg::Texture2D), _image(osgDB::readImageFile("./Resources/bang.png")),
+  _toDelete(toDelete), _clb(new bangCallback)
+{
+  this->setDataVariance(osg::Object::DYNAMIC);
+  this->setUpdateCallback(_clb);
+
+  osg::Matrix m;
+  m.makeTranslate(x, y, z);
+  this->setMatrix(m);
+
+  _geom->setColorBinding(osg::Geometry::BIND_OVERALL);
+  _color->push_back(osg::Vec4(1.f, 1.f, 1.f, 1.f));
+  _geom->setColorArray(_color.get());
+
+  _vertices->push_back(osg::Vec3(-8, 0, -8)); // 1
+  _vertices->push_back(osg::Vec3(8, 0, -8)); // 2
+  _vertices->push_back(osg::Vec3(8, 0, 8)); // 3
+  _vertices->push_back(osg::Vec3(-8, 0, 8)); // 4
+
+  _geom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::QUADS, 0, 4));
+
+  _geom->setVertexArray(_vertices.get());
+
+  _normals->setBinding(osg::Array::BIND_OVERALL);
+  _normals->push_back(osg::Vec3(0, -1, 0));
+
+  _geom->setNormalArray(_normals.get());
+
+  _texCoord->push_back(osg::Vec2(2. / 3, 0));
+  _texCoord->push_back(osg::Vec2(1, 0));
+  _texCoord->push_back(osg::Vec2(1, 1));
+  _texCoord->push_back(osg::Vec2(2. / 3, 1));
+
+  _geom->setTexCoordArray(0, _texCoord.get(), osg::Array::Binding::BIND_PER_VERTEX);
+
+  _texture->setImage(_image);
+  _texture->setWrap(osg::Texture2D::WRAP_T, osg::Texture2D::CLAMP_TO_EDGE);
+  _texture->setFilter(osg::Texture2D::MAG_FILTER, osg::Texture2D::NEAREST);
+  osg::StateSet* state = _geom->getOrCreateStateSet();
+  state->setTextureAttributeAndModes(0, _texture);
+  state->setRenderingHint(osg::StateSet::TRANSPARENT_BIN);
+
+  _geode->addDrawable(_geom.get());
+  this->addChild(_geode.get());
+}
+
+// текстура взрыва изменяется со временем и в конечном счете он пропадает
+void bang::AnimateBang()
+{
+  int temp = 10;
+  _roughTimer++;
+  if (_roughTimer == temp)
+  {
+    _texCoord = new osg::Vec2Array;
+
+    _texCoord->push_back(osg::Vec2(1. / 3, 0));
+    _texCoord->push_back(osg::Vec2(2. / 3, 0));
+    _texCoord->push_back(osg::Vec2(2. / 3, 1));
+    _texCoord->push_back(osg::Vec2(1. / 3, 1));
+
+    _geom->setTexCoordArray(0, _texCoord.get(), osg::Array::Binding::BIND_PER_VERTEX);
+  }
+  if (_roughTimer == temp * 2)
+  {
+    _texCoord = new osg::Vec2Array;
+
+    _texCoord->push_back(osg::Vec2(0, 0));
+    _texCoord->push_back(osg::Vec2(1. / 3, 0));
+    _texCoord->push_back(osg::Vec2(1. / 3, 1));
+    _texCoord->push_back(osg::Vec2(0, 1));
+
+    _geom->setTexCoordArray(0, _texCoord.get(), osg::Array::Binding::BIND_PER_VERTEX);
+  }
+  if (_roughTimer == temp * 3)
+  {
+    _toDelete->push_back(this);
+    this->removeUpdateCallback(_clb);
+  }
+}
+
 void bangCallback::operator()(osg::Node* nd, osg::NodeVisitor* ndv)
 {
   bang* bng = dynamic_cast<bang*>(nd);
-  bng->MakeBang();
+  bng->AnimateBang();
   traverse(nd, ndv);
 }
 
@@ -141,169 +143,12 @@ private:
 class projectile : public osg::MatrixTransform
 {
 public:
-  projectile::projectile(int x, int y, int z, direction dir,
-    blockType prjDir, tank* parentTank,
-    std::vector<osg::ref_ptr<tank>>* tank,
-    std::map<osg::Vec2i, blockType>* typeMap,
-    std::map<osg::Vec2i, osg::ref_ptr<osg::MatrixTransform>>* tileMap,
-    std::list<osg::Node*>* toDelete, tileMaker* prjMaker)
-    : MatrixTransform(*prjMaker->GetTile(x, y, z, prjDir, true)), _dir(dir), _x(x), _y(y), _z(z), _clb(new projectileCallback),
-    _parentTank(parentTank), _tank(tank), _typeMap(typeMap), _tileMap(tileMap), _toDelete(toDelete)
-  {
-    this->setDataVariance(osg::Object::DYNAMIC);
-    this->setUpdateCallback(_clb);
-    int prjSpeed;
-    if (parentTank->GetType() == tank::type::LIGHT)
-      prjSpeed = 4;
-    else if (parentTank->GetType() == tank::type::HEAVY)
-      prjSpeed = 2;
-    switch (_dir)
-    {
-    case(direction::UP) :
-    {
-      _collisionPt1 = { (_x + 2) / 8, (_z + 8) / 8 };
-      _collisionPt2 = { (_x + 6) / 8, (_z + 8) / 8 };
-      Moving = [this, prjSpeed]
-      {
-        _z += prjSpeed;
-        _collisionPt1[1] = (_z + 8) / 8;
-        _collisionPt2[1] = (_z + 8) / 8;
-        mT.makeTranslate(_x, _y, _z);
-        this->setMatrix(mT);
-      };
-      break;
-    }
-    case(direction::DOWN) :
-    {
-      _collisionPt1 = { (_x + 2) / 8, (_z) / 8 };
-      _collisionPt2 = { (_x + 6) / 8, (_z) / 8 };
-      Moving = [this, prjSpeed]
-      {
-        _z -= prjSpeed;
-        _collisionPt1[1] = (_z) / 8;
-        _collisionPt2[1] = (_z) / 8;
-        mT.makeTranslate(_x, _y, _z);
-        this->setMatrix(mT);
-      };
-      break;
-    }
-    case(direction::LEFT) :
-    {
-      _collisionPt1 = { (_x) / 8, (_z + 2) / 8 };
-      _collisionPt2 = { (_x) / 8, (_z + 6) / 8 };
-      Moving = [this, prjSpeed]
-      {
-        _x -= prjSpeed;
-        _collisionPt1[0] = (_x) / 8;
-        _collisionPt2[0] = (_x) / 8;
-        mT.makeTranslate(_x, _y, _z);
-        this->setMatrix(mT);
-      };
-      break;
-    }
-    case(direction::RIGHT) :
-    {
-      _collisionPt1 = { (_x + 8) / 8, (_z + 2) / 8 };
-      _collisionPt2 = { (_x + 8) / 8, (_z + 6) / 8 };
-      Moving = [this, prjSpeed]
-      {
-        _x += prjSpeed;
-        _collisionPt1[0] = (_x + 8) / 8;
-        _collisionPt2[0] = (_x + 8) / 8;
-        mT.makeTranslate(_x, _y, _z);
-        this->setMatrix(mT);
-      };
-      break;
-    }
-    }
-  }
-
-  void projectile::TryToMove()
-  {
-    std::map<osg::Vec2i, blockType>::const_iterator a, b;
-    bool aGo = false, bGo = false, projDel = false;
-
-    if ((a = _typeMap->find(_collisionPt1)) != _typeMap->end())
-      if ((*a).second == blockType::BRICK)
-      {
-        // уничтожаем блок
-        _toDelete->push_back((*_tileMap)[_collisionPt1]);
-        _typeMap->erase(a);
-        projDel = true;
-      }
-      else if (((*a).second == blockType::ARMOR) || ((*a).second == blockType::BORDER))
-      {
-        projDel = true;
-      }
-      else
-        aGo = true;
-    else
-      aGo = true;
-
-    if ((b = _typeMap->find(_collisionPt2)) != _typeMap->end())
-      if ((*b).second == blockType::BRICK)
-      {
-        // уничтожаем блок
-        _toDelete->push_back((*_tileMap)[_collisionPt2]);
-        _typeMap->erase(b);
-        projDel = true;
-      }
-      else if (((*b).second == blockType::ARMOR) || ((*b).second == blockType::BORDER))
-      {
-        // уничтожить снаряд
-        projDel = true;
-      }
-      else
-        bGo = true;
-    else
-      bGo = true;
-
-    if (!projDel)
-      for (auto it = _tank->cbegin(); it != _tank->end(); ++it)
-      {
-        if ((*it).get() != _parentTank && (*it)->Enabled())
-          if (_z + 6 >= (*it)->GetZCoord() - 8 && _z + 2 <= (*it)->GetZCoord() + 8)
-            if (_x + 6 >= (*it)->GetXCoord() - 8 && _x + 2 <= (*it)->GetXCoord() + 8) // есть попадание
-            {
-              // уничтожить снаряд
-              projDel = true;
-
-              // если попали в лоб тяжелому танку - нет пробития
-              osg::ref_ptr<tank> attackedEnemy = *it;
-              if (!(attackedEnemy->GetType() == tank::type::HEAVY &&
-                abs(static_cast<int>(attackedEnemy->CurDir()) - static_cast<int>(_dir)) == 2))
-              {
-                // создаем взрыв
-                bang* bng = new bang((*it)->GetXCoord(), 4, (*it)->GetZCoord(), _toDelete);
-                _parentTank->getParent(0)->addChild(bng);
-
-                // уничтожаем танк
-                attackedEnemy->Disable(); // отключаем его
-                _toDelete->push_back(attackedEnemy); // ставим в очередь на удаление со сцены
-
-                // увеличиваем число убийств
-                emit _parentTank->smbdyKilled(_parentTank->AddKill());
-
-                // через какое-то время противнек зареспавнится
-                QTimer::singleShot(3000, attackedEnemy, [attackedEnemy] { emit attackedEnemy->iNeedRespawn(attackedEnemy.get()); });
-              }
-            }
-      }
-
-    if (projDel)
-    {
-      // уничтожаем снаряд
-      _toDelete->push_back(this);
-      this->removeUpdateCallback(_clb);
-    }
-
-    if (aGo && bGo && !projDel)
-      Moving();
-  }
-
-  std::function<void()> Moving;
-
+  projectile::projectile(int x, int y, int z, direction dir, tank* parentTank,
+    std::vector<osg::ref_ptr<tank>>* tank, std::map<osg::Vec2i, blockType>* typeMap,
+    std::map<osg::Vec2i, osg::ref_ptr<osg::MatrixTransform>>* tileMap, std::list<osg::Node*>* toDelete);
+  void TryToMove();
 private:
+  std::function<void()> moving;
   std::map<osg::Vec2i, blockType>* _typeMap;
   std::map<osg::Vec2i, osg::ref_ptr<osg::MatrixTransform>>* _tileMap;
   std::list<osg::Node*>* _toDelete;
@@ -318,6 +163,189 @@ private:
   int _z;
   osg::ref_ptr<projectileCallback> _clb;
 };
+
+// конструктор
+projectile::projectile(int x, int y, int z, direction dir, tank* parentTank,
+  std::vector<osg::ref_ptr<tank>>* tank, std::map<osg::Vec2i, blockType>* typeMap,
+  std::map<osg::Vec2i, osg::ref_ptr<osg::MatrixTransform>>* tileMap, std::list<osg::Node*>* toDelete)
+  : _dir(dir), _x(x), _y(y), _z(z), _clb(new projectileCallback), _parentTank(parentTank), 
+  _tank(tank), _typeMap(typeMap), _tileMap(tileMap), _toDelete(toDelete)
+{
+  this->setDataVariance(osg::Object::DYNAMIC);
+  this->setUpdateCallback(_clb);
+
+  osg::Matrix m; // перемещаем в точку спавна
+  m.makeTranslate(_x, 0, _z);
+  this->setMatrix(m); // наследуется от MatrixTransform для перемещения
+
+  osg::ref_ptr<osg::Node> node;
+  osg::ref_ptr<osg::Image> image = // читаем текстуру
+    osgDB::readImageFile("./Resources/projectile/Bullet_U.bmp");
+
+  int prjSpeed;
+  if (parentTank->GetType() == tank::type::LIGHT)
+    prjSpeed = 4; // 4
+  else if (parentTank->GetType() == tank::type::HEAVY)
+    prjSpeed = 2; // 2
+  switch (_dir)
+  {
+    case(direction::UP) :
+    {
+      // читаем и поворачиваем модельку под необходимое направление
+      node = osgDB::readNodeFile("./Resources/projectile/lowpolybullet.3ds.4,0,0.trans");
+      _collisionPt1 = { (_x + 2) / 8, (_z + 8) / 8 };
+      _collisionPt2 = { (_x + 6) / 8, (_z + 8) / 8 };
+      moving = [this, prjSpeed]
+      {
+        _z += prjSpeed;
+        _collisionPt1[1] = (_z + 8) / 8;
+        _collisionPt2[1] = (_z + 8) / 8;
+        mT.makeTranslate(_x, _y, _z);
+        this->setMatrix(mT);
+      };
+      break;
+    }
+    case(direction::DOWN) :
+    {
+      // читаем и поворачиваем модельку под необходимое направление
+      node = osgDB::readNodeFile("./Resources/projectile/lowpolybullet.3ds.0,180,0.rot.4,0,8.trans");
+      _collisionPt1 = { (_x + 2) / 8, (_z) / 8 };
+      _collisionPt2 = { (_x + 6) / 8, (_z) / 8 };
+      moving = [this, prjSpeed]
+      {
+        _z -= prjSpeed;
+        _collisionPt1[1] = (_z) / 8;
+        _collisionPt2[1] = (_z) / 8;
+        mT.makeTranslate(_x, _y, _z);
+        this->setMatrix(mT);
+      };
+      break;
+    }
+    case(direction::LEFT) :
+    {
+      // читаем и поворачиваем модельку под необходимое направление
+      node = osgDB::readNodeFile("./Resources/projectile/lowpolybullet.3ds.0,270,0.rot.8,0,4.trans");
+      _collisionPt1 = { (_x) / 8, (_z + 2) / 8 };
+      _collisionPt2 = { (_x) / 8, (_z + 6) / 8 };
+      moving = [this, prjSpeed]
+      {
+        _x -= prjSpeed;
+        _collisionPt1[0] = (_x) / 8;
+        _collisionPt2[0] = (_x) / 8;
+        mT.makeTranslate(_x, _y, _z);
+        this->setMatrix(mT);
+      };
+      break;
+    }
+    case(direction::RIGHT) :
+    {
+      // читаем и поворачиваем модельку под необходимое направление
+      node = osgDB::readNodeFile("./Resources/projectile/lowpolybullet.3ds.0,90,0.rot.0,0,4.trans");
+      _collisionPt1 = { (_x + 8) / 8, (_z + 2) / 8 };
+      _collisionPt2 = { (_x + 8) / 8, (_z + 6) / 8 };
+      moving = [this, prjSpeed]
+      {
+        _x += prjSpeed;
+        _collisionPt1[0] = (_x + 8) / 8;
+        _collisionPt2[0] = (_x + 8) / 8;
+        mT.makeTranslate(_x, _y, _z);
+        this->setMatrix(mT);
+      };
+      break;
+    }
+  }
+  // устанавливаем текстуру
+  osg::StateSet* state = node->getOrCreateStateSet();
+  osg::ref_ptr<osg::Texture2D> texture = new osg::Texture2D;
+  texture->setImage(image.get());
+  state->setTextureAttributeAndModes(0, texture.get());
+
+  this->addChild(node.get());
+}
+
+// просчет коллизий
+void projectile::TryToMove()
+{
+  std::map<osg::Vec2i, blockType>::const_iterator a, b;
+  bool aGo = false, bGo = false, projDel = false;
+
+  if ((a = _typeMap->find(_collisionPt1)) != _typeMap->end())
+    if ((*a).second == blockType::BRICK)
+    {
+      // уничтожаем блок
+      _toDelete->push_back((*_tileMap)[_collisionPt1]);
+      _typeMap->erase(a);
+      projDel = true;
+    }
+    else if (((*a).second == blockType::ARMOR) || ((*a).second == blockType::BORDER))
+    {
+      projDel = true;
+    }
+    else
+      aGo = true;
+  else
+    aGo = true;
+
+  if ((b = _typeMap->find(_collisionPt2)) != _typeMap->end())
+    if ((*b).second == blockType::BRICK)
+    {
+      // уничтожаем блок
+      _toDelete->push_back((*_tileMap)[_collisionPt2]);
+      _typeMap->erase(b);
+      projDel = true;
+    }
+    else if (((*b).second == blockType::ARMOR) || ((*b).second == blockType::BORDER))
+    {
+      // уничтожить снаряд
+      projDel = true;
+    }
+    else
+      bGo = true;
+  else
+    bGo = true;
+
+  if (!projDel)
+    for (auto it = _tank->cbegin(); it != _tank->end(); ++it)
+    {
+      if ((*it).get() != _parentTank && (*it)->Enabled())
+        if (_z + 6 >= (*it)->GetZCoord() - 8 && _z + 2 <= (*it)->GetZCoord() + 8)
+          if (_x + 6 >= (*it)->GetXCoord() - 8 && _x + 2 <= (*it)->GetXCoord() + 8) // есть попадание
+          {
+            // уничтожить снаряд
+            projDel = true;
+
+            // если попали в лоб тяжелому танку - нет пробития
+            osg::ref_ptr<tank> attackedEnemy = *it;
+            if (!(attackedEnemy->GetType() == tank::type::HEAVY &&
+              abs(static_cast<int>(attackedEnemy->CurDir()) - static_cast<int>(_dir)) == 2))
+            {
+              // создаем взрыв
+              bang* bng = new bang((*it)->GetXCoord(), 4, (*it)->GetZCoord(), _toDelete);
+              _parentTank->getParent(0)->addChild(bng);
+
+              // уничтожаем танк
+              attackedEnemy->Disable(); // отключаем его
+              _toDelete->push_back(attackedEnemy); // ставим в очередь на удаление со сцены
+
+              // увеличиваем число убийств
+              emit _parentTank->iKilledSomebody(_parentTank->AddKill());
+
+              // через какое-то время противнек зареспавнится
+              QTimer::singleShot(3000, attackedEnemy, [attackedEnemy] { emit attackedEnemy->iNeedRespawn(attackedEnemy.get()); });
+            }
+          }
+    }
+
+  if (projDel)
+  {
+    // уничтожаем снаряд
+    _toDelete->push_back(this);
+    this->removeUpdateCallback(_clb);
+  }
+
+  if (aGo && bGo && !projDel)
+    moving();
+}
 
 void projectileCallback::operator()(osg::Node* nd, osg::NodeVisitor* ndv)
 {
@@ -334,14 +362,13 @@ void projectileCallback::operator()(osg::Node* nd, osg::NodeVisitor* ndv)
 
 const int SHOOT_TIMEOUT = 300; // задержка между выстрелами в мс
 
-tank::tank(int x, int z, std::string texNum, int controlDevice,
-  std::vector<osg::ref_ptr<tank>>* tank,
-  std::map<osg::Vec2i, blockType>* typeMap,
-  std::map<osg::Vec2i, osg::ref_ptr<osg::MatrixTransform>>* tileMap,
-  std::list<osg::Node*>* toDelete, tileMaker* prjMaker)
-  : _timer(new QDeadlineTimer(SHOOT_TIMEOUT)), _rMt(new MatrixTransform),
-  _typeMap(typeMap), _tileMap(tileMap), _toDelete(toDelete), _texNum(texNum),
-  _tank(tank), _controlDevice(controlDevice), _x(x), _z(z), _prjMaker(prjMaker), _type(type::LIGHT)
+// конструктор
+tank::tank(int x, int z, std::string texNum, int controlDevice, std::vector<osg::ref_ptr<tank>>* tank,
+  std::map<osg::Vec2i, blockType>* typeMap, std::map<osg::Vec2i, 
+  osg::ref_ptr<osg::MatrixTransform>>* tileMap, std::list<osg::Node*>* toDelete)
+  : _timer(new QDeadlineTimer(SHOOT_TIMEOUT)), _rMt(new MatrixTransform), _typeMap(typeMap), 
+  _tileMap(tileMap), _toDelete(toDelete), _texNum(texNum), _tank(tank), _controlDevice(controlDevice), 
+  _x(x), _z(z), _type(type::LIGHT)
 {
   this->setDataVariance(osg::Object::DYNAMIC);
 
@@ -364,6 +391,7 @@ tank::tank(int x, int z, std::string texNum, int controlDevice,
   this->addChild(_rMt.get());
 }
 
+// изменить тип танка
 void tank::ChangeType()
 {
   _rMt->removeChildren(0, _rMt->getNumChildren());
@@ -465,6 +493,7 @@ const bool tank::Enabled() const
   return _enabled;
 }
 
+// просчет коллизий и движение
 void tank::Move()
 {
   // вычисление точек коллизии в зависимости от направления танка
@@ -671,23 +700,14 @@ const bool tank::NeedToGo() const
   return _go;
 }
 
+// стрельба
 void tank::Shoot()
 {
   // обеспечиваем задержку при стрельбе
   if (_timer->hasExpired())
   {
-    blockType prjDir;
-    if (_curDir == direction::UP)
-      prjDir = blockType::PRJ_UP;
-    else if (_curDir == direction::DOWN)
-      prjDir = blockType::PRJ_DOWN;
-    else if (_curDir == direction::LEFT)
-      prjDir = blockType::PRJ_LEFT;
-    else if (_curDir == direction::RIGHT)
-      prjDir = blockType::PRJ_RIGHT;
-
-    _projectile = new projectile(_x - 4, -4, _z - 4, _curDir, prjDir, 
-      this, _tank, _typeMap, _tileMap, _toDelete, _prjMaker);
+    _projectile = new projectile(_x - 4, -4, _z - 4, _curDir, this, 
+      _tank, _typeMap, _tileMap, _toDelete);
     this->getParent(0)->addChild(_projectile.get());
     _projectile->setName(this->getName() + " - projectile");
     // обновляем таймер

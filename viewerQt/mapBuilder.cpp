@@ -1,10 +1,10 @@
-#include "tile.h"
+#include "mapBuilder.h"
 #include <QFile>
 #include <osgDB/ReadFile>
 #include <osg/Texture2D>
 #include <osg/MatrixTransform>
 
-osg::ref_ptr<osg::Geode> tileMaker::makeNewTile(blockType bt, bool pr)
+osg::ref_ptr<osg::Geode> mapBuilder::makeNewTile(blockType bt, bool pr)
 {
   // цвет
   osg::ref_ptr<osg::Vec4Array> color = new osg::Vec4Array;
@@ -162,7 +162,7 @@ osg::ref_ptr<osg::Geode> tileMaker::makeNewTile(blockType bt, bool pr)
   return geode;
 }
 
-osg::ref_ptr<osg::MatrixTransform> tileMaker::GetTile(int x, int y, int z, blockType bt, bool pr)
+osg::ref_ptr<osg::MatrixTransform> mapBuilder::GetTile(int x, int y, int z, blockType bt, bool pr)
 {
   osg::ref_ptr<osg::MatrixTransform> mt = new osg::MatrixTransform;
   osg::Matrix m;
@@ -177,7 +177,7 @@ osg::ref_ptr<osg::MatrixTransform> tileMaker::GetTile(int x, int y, int z, block
   return mt;
 }
 
-tileMaker::tileMaker()
+mapBuilder::mapBuilder()
 {
   blockTex.push_back("./Resources/blocks/BORDER.png");
   blockTex.push_back("./Resources/blocks/BRICK.png");
@@ -192,7 +192,7 @@ tileMaker::tileMaker()
   blockTex.push_back("./Resources/projectile/RIGHT.png");
 }
 
-void tileMaker::skipUnknownElement(QXmlStreamReader& reader)
+void mapBuilder::skipUnknownElement(QXmlStreamReader& reader)
 {
   reader.readNext();
   while (!reader.atEnd())
@@ -220,7 +220,7 @@ void tileMaker::skipUnknownElement(QXmlStreamReader& reader)
   }
 }
 
-int tileMaker::CreateMap(osg::ref_ptr<osg::Group> scene,
+int mapBuilder::CreateMap(osg::ref_ptr<osg::Group> scene,
   std::map<osg::Vec2i, blockType>& typeMap,
   std::map<osg::Vec2i, osg::ref_ptr<osg::MatrixTransform>>& tileMap, 
   QString fileName, osg::Vec2i& mapSize)

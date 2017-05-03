@@ -2,8 +2,6 @@
 
 #include <string>
 #include <osg/MatrixTransform>
-//#include <osg/ref_ptr>
-//#include <osg/Geode>
 #include <QXmlStreamReader>
 
 enum class blockType
@@ -20,10 +18,10 @@ enum class blockType
   PRJ_RIGHT = 9
 };
 
-class tileMaker
+class mapBuilder
 {
 public:
-  tileMaker();
+  mapBuilder();
   osg::ref_ptr<osg::MatrixTransform> GetTile(int x, int y, int z, blockType bt, bool pr = false);
   int CreateMap(osg::ref_ptr<osg::Group> scene, 
     std::map<osg::Vec2i, blockType>& typeMap,
