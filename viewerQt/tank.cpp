@@ -7,6 +7,8 @@
 #include <vector>
 #include <functional>
 #include <map>
+#include <QApplication>
+#include <QtMath>
 
 //////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////BANG////////////////////////////////////////////////////
@@ -15,7 +17,7 @@
 class bangCallback : public osg::NodeCallback
 {
 public:
-  void operator()(osg::Node* nd, osg::NodeVisitor* ndv);
+  void operator()(osg::Node* nd, osg::NodeVisitor* ndv) override;
 };
 
 class bang : public osg::MatrixTransform
@@ -135,7 +137,7 @@ void bangCallback::operator()(osg::Node* nd, osg::NodeVisitor* ndv)
 class projectileCallback : public osg::NodeCallback
 {
 public:
-  void operator()(osg::Node* nd, osg::NodeVisitor* ndv);
+  void operator()(osg::Node* nd, osg::NodeVisitor* ndv) override;
 private:
   bool delay = false;
 };
@@ -143,9 +145,10 @@ private:
 class projectile : public osg::MatrixTransform
 {
 public:
-  projectile::projectile(int x, int y, int z, direction dir, tank* parentTank,
+  projectile(int x, int y, int z, direction dir, tank* parentTank,
     std::vector<osg::ref_ptr<tank>>* tank, std::map<osg::Vec2i, blockType>* typeMap,
-    std::map<osg::Vec2i, osg::ref_ptr<osg::MatrixTransform>>* tileMap, std::list<osg::Node*>* toDelete);
+    std::map<osg::Vec2i, osg::ref_ptr<osg::MatrixTransform>>* tileMap, 
+    std::list<osg::Node*>* toDelete, ViewerWidget* ViewerWindow);
   void TryToMove();
 private:
   std::function<void()> moving;
@@ -153,29 +156,31 @@ private:
   std::map<osg::Vec2i, osg::ref_ptr<osg::MatrixTransform>>* _tileMap;
   std::list<osg::Node*>* _toDelete;
   direction _dir;
-  osg::Matrix mT;
-  osg::Vec2i _collisionPt1;
-  osg::Vec2i _collisionPt2;
+  osg::Matrix _mT;
   tank* _parentTank;
   std::vector<osg::ref_ptr<tank>>* _tank;
+  osg::Vec2i _tileCollizionPt1;
+  osg::Vec2i _tileCollizionPt2;
   int _x;
   int _y;
   int _z;
   osg::ref_ptr<projectileCallback> _clb;
+  ViewerWidget* _ViewerWindow;
 };
 
 // конструктор
 projectile::projectile(int x, int y, int z, direction dir, tank* parentTank,
   std::vector<osg::ref_ptr<tank>>* tank, std::map<osg::Vec2i, blockType>* typeMap,
-  std::map<osg::Vec2i, osg::ref_ptr<osg::MatrixTransform>>* tileMap, std::list<osg::Node*>* toDelete)
+  std::map<osg::Vec2i, osg::ref_ptr<osg::MatrixTransform>>* tileMap, 
+  std::list<osg::Node*>* toDelete, ViewerWidget* ViewerWindow)
   : _dir(dir), _x(x), _y(y), _z(z), _clb(new projectileCallback), _parentTank(parentTank), 
-  _tank(tank), _typeMap(typeMap), _tileMap(tileMap), _toDelete(toDelete)
+  _tank(tank), _typeMap(typeMap), _tileMap(tileMap), _toDelete(toDelete), _ViewerWindow(ViewerWindow)
 {
   this->setDataVariance(osg::Object::DYNAMIC);
   this->setUpdateCallback(_clb);
 
   osg::Matrix m; // перемещаем в точку спавна
-  m.makeTranslate(_x, 0, _z);
+  m.makeTranslate(_x, _y, _z);
   this->setMatrix(m); // наследуется от MatrixTransform для перемещения
 
   osg::ref_ptr<osg::Node> node;
@@ -193,15 +198,15 @@ projectile::projectile(int x, int y, int z, direction dir, tank* parentTank,
     {
       // читаем и поворачиваем модельку под необходимое направление
       node = osgDB::readNodeFile("./Resources/projectile/lowpolybullet.3ds.4,0,0.trans");
-      _collisionPt1 = { (_x + 2) / 8, (_z + 8) / 8 };
-      _collisionPt2 = { (_x + 6) / 8, (_z + 8) / 8 };
+      _tileCollizionPt1 = { (_x + 2) / 8, (_z + 8) / 8 };
+      _tileCollizionPt2 = { (_x + 6) / 8, (_z + 8) / 8 };
       moving = [this, prjSpeed]
       {
         _z += prjSpeed;
-        _collisionPt1[1] = (_z + 8) / 8;
-        _collisionPt2[1] = (_z + 8) / 8;
-        mT.makeTranslate(_x, _y, _z);
-        this->setMatrix(mT);
+        _tileCollizionPt1[1] = (_z + 8) / 8;
+        _tileCollizionPt2[1] = (_z + 8) / 8;
+        _mT.makeTranslate(_x, _y, _z);
+        this->setMatrix(_mT);
       };
       break;
     }
@@ -209,15 +214,15 @@ projectile::projectile(int x, int y, int z, direction dir, tank* parentTank,
     {
       // читаем и поворачиваем модельку под необходимое направление
       node = osgDB::readNodeFile("./Resources/projectile/lowpolybullet.3ds.0,180,0.rot.4,0,8.trans");
-      _collisionPt1 = { (_x + 2) / 8, (_z) / 8 };
-      _collisionPt2 = { (_x + 6) / 8, (_z) / 8 };
+      _tileCollizionPt1 = { (_x + 2) / 8, (_z) / 8 };
+      _tileCollizionPt2 = { (_x + 6) / 8, (_z) / 8 };
       moving = [this, prjSpeed]
       {
         _z -= prjSpeed;
-        _collisionPt1[1] = (_z) / 8;
-        _collisionPt2[1] = (_z) / 8;
-        mT.makeTranslate(_x, _y, _z);
-        this->setMatrix(mT);
+        _tileCollizionPt1[1] = (_z) / 8;
+        _tileCollizionPt2[1] = (_z) / 8;
+        _mT.makeTranslate(_x, _y, _z);
+        this->setMatrix(_mT);
       };
       break;
     }
@@ -225,15 +230,15 @@ projectile::projectile(int x, int y, int z, direction dir, tank* parentTank,
     {
       // читаем и поворачиваем модельку под необходимое направление
       node = osgDB::readNodeFile("./Resources/projectile/lowpolybullet.3ds.0,270,0.rot.8,0,4.trans");
-      _collisionPt1 = { (_x) / 8, (_z + 2) / 8 };
-      _collisionPt2 = { (_x) / 8, (_z + 6) / 8 };
+      _tileCollizionPt1 = { (_x) / 8, (_z + 2) / 8 };
+      _tileCollizionPt2 = { (_x) / 8, (_z + 6) / 8 };
       moving = [this, prjSpeed]
       {
         _x -= prjSpeed;
-        _collisionPt1[0] = (_x) / 8;
-        _collisionPt2[0] = (_x) / 8;
-        mT.makeTranslate(_x, _y, _z);
-        this->setMatrix(mT);
+        _tileCollizionPt1[0] = (_x) / 8;
+        _tileCollizionPt2[0] = (_x) / 8;
+        _mT.makeTranslate(_x, _y, _z);
+        this->setMatrix(_mT);
       };
       break;
     }
@@ -241,15 +246,15 @@ projectile::projectile(int x, int y, int z, direction dir, tank* parentTank,
     {
       // читаем и поворачиваем модельку под необходимое направление
       node = osgDB::readNodeFile("./Resources/projectile/lowpolybullet.3ds.0,90,0.rot.0,0,4.trans");
-      _collisionPt1 = { (_x + 8) / 8, (_z + 2) / 8 };
-      _collisionPt2 = { (_x + 8) / 8, (_z + 6) / 8 };
+      _tileCollizionPt1 = { (_x + 8) / 8, (_z + 2) / 8 };
+      _tileCollizionPt2 = { (_x + 8) / 8, (_z + 6) / 8 };
       moving = [this, prjSpeed]
       {
         _x += prjSpeed;
-        _collisionPt1[0] = (_x + 8) / 8;
-        _collisionPt2[0] = (_x + 8) / 8;
-        mT.makeTranslate(_x, _y, _z);
-        this->setMatrix(mT);
+        _tileCollizionPt1[0] = (_x + 8) / 8;
+        _tileCollizionPt2[0] = (_x + 8) / 8;
+        _mT.makeTranslate(_x, _y, _z);
+        this->setMatrix(_mT);
       };
       break;
     }
@@ -269,11 +274,11 @@ void projectile::TryToMove()
   std::map<osg::Vec2i, blockType>::const_iterator a, b;
   bool aGo = false, bGo = false, projDel = false;
 
-  if ((a = _typeMap->find(_collisionPt1)) != _typeMap->end())
+  if ((a = _typeMap->find(_tileCollizionPt1)) != _typeMap->end())
     if ((*a).second == blockType::BRICK)
     {
       // уничтожаем блок
-      _toDelete->push_back((*_tileMap)[_collisionPt1]);
+      _toDelete->push_back((*_tileMap)[_tileCollizionPt1]);
       _typeMap->erase(a);
       projDel = true;
     }
@@ -286,11 +291,11 @@ void projectile::TryToMove()
   else
     aGo = true;
 
-  if ((b = _typeMap->find(_collisionPt2)) != _typeMap->end())
+  if ((b = _typeMap->find(_tileCollizionPt2)) != _typeMap->end())
     if ((*b).second == blockType::BRICK)
     {
       // уничтожаем блок
-      _toDelete->push_back((*_tileMap)[_collisionPt2]);
+      _toDelete->push_back((*_tileMap)[_tileCollizionPt2]);
       _typeMap->erase(b);
       projDel = true;
     }
@@ -307,31 +312,39 @@ void projectile::TryToMove()
   if (!projDel)
     for (auto it = _tank->cbegin(); it != _tank->end(); ++it)
     {
-      if ((*it).get() != _parentTank && (*it)->Enabled())
+      if ((*it).get() != _parentTank && (*it)->IsEnabled())
         if (_z + 6 >= (*it)->GetZCoord() - 8 && _z + 2 <= (*it)->GetZCoord() + 8)
           if (_x + 6 >= (*it)->GetXCoord() - 8 && _x + 2 <= (*it)->GetXCoord() + 8) // есть попадание
           {
-            // уничтожить снаряд
-            projDel = true;
-
-            // если попали в лоб тяжелому танку - нет пробития
             osg::ref_ptr<tank> attackedEnemy = *it;
-            if (!(attackedEnemy->GetType() == tank::type::HEAVY &&
-              abs(static_cast<int>(attackedEnemy->CurDir()) - static_cast<int>(_dir)) == 2))
+            
+            if (attackedEnemy->IsEnabled())
             {
-              // создаем взрыв
-              bang* bng = new bang((*it)->GetXCoord(), 4, (*it)->GetZCoord(), _toDelete);
-              _parentTank->getParent(0)->addChild(bng);
+              // уничтожить снаряд
+              projDel = true;
+              // если попали в лоб тяжелому танку - нет пробития
+              if (!(attackedEnemy->GetType() == tank::type::HEAVY &&
+                abs(static_cast<int>(attackedEnemy->CurDir()) - static_cast<int>(_dir)) == 2))
+              {
+                // создаем взрыв
+                bang* bng = new bang((*it)->GetXCoord(), 4, (*it)->GetZCoord(), _toDelete);
+                _parentTank->getParent(0)->addChild(bng);
 
-              // уничтожаем танк
-              attackedEnemy->Disable(); // отключаем его
-              _toDelete->push_back(attackedEnemy); // ставим в очередь на удаление со сцены
+                // уничтожаем танк
+                attackedEnemy->Disable(); // отключаем его
+                _toDelete->push_back(attackedEnemy); // ставим в очередь на удаление со сцены
 
-              // увеличиваем число убийств
-              emit _parentTank->iKilledSomebody(_parentTank->AddKill());
+                // увеличиваем число убийств
+                QApplication::postEvent(_ViewerWindow,
+                  new tankKilledSomebody(_parentTank->GetPlayerNum(), _parentTank->AddKill()));
 
-              // через какое-то время противнек зареспавнится
-              QTimer::singleShot(3000, attackedEnemy, [attackedEnemy] { emit attackedEnemy->iNeedRespawn(attackedEnemy.get()); });
+                // через какое-то время противнек зареспавнится
+                ViewerWidget* vw = _ViewerWindow;
+                QTimer::singleShot(3000, vw, [attackedEnemy, vw]
+                  { 
+                    QApplication::postEvent(vw, new tankNeedRespawn(attackedEnemy.get())); 
+                  });
+              }
             }
           }
     }
@@ -339,8 +352,8 @@ void projectile::TryToMove()
   if (projDel)
   {
     // уничтожаем снаряд
-    _toDelete->push_back(this);
     this->removeUpdateCallback(_clb);
+    _toDelete->push_back(this);
   }
 
   if (aGo && bGo && !projDel)
@@ -357,18 +370,231 @@ void projectileCallback::operator()(osg::Node* nd, osg::NodeVisitor* ndv)
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////BOMB//////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////
+
+class bombCallback : public osg::NodeCallback
+{
+public:
+  void operator()(osg::Node* nd, osg::NodeVisitor* ndv) override;
+private:
+  int _delay = 0;
+};
+
+class bomb : public osg::MatrixTransform
+{
+public:
+  bomb(int x, int y, int z, tank* parentTank, std::vector<osg::ref_ptr<tank>>* tank,
+    std::map<osg::Vec2i, blockType>* typeMap, 
+    std::map<osg::Vec2i, osg::ref_ptr<osg::MatrixTransform>>* tileMap,
+    std::list<osg::Node*>* toDelete, ViewerWidget* ViewerWindow);
+  void Explode();
+private:
+  bool destroyTilesAt(int x, int z);
+  void destroyTanksAt(int fromX, int toX, int fromZ, int toZ);
+
+  std::map<osg::Vec2i, blockType>* _typeMap;
+  std::map<osg::Vec2i, osg::ref_ptr<osg::MatrixTransform>>* _tileMap;
+  std::list<osg::Node*>* _toDelete;
+  std::vector<osg::ref_ptr<tank>>* _tank;
+  int _x;
+  int _y;
+  int _z;
+  osg::ref_ptr<bombCallback> _clb;
+  ViewerWidget* _ViewerWindow;
+  tank* _parentTank;
+};
+
+// конструктор
+bomb::bomb(int x, int y, int z, tank* parentTank, 
+  std::vector<osg::ref_ptr<tank>>* tank, std::map<osg::Vec2i, blockType>* typeMap,
+  std::map<osg::Vec2i, osg::ref_ptr<osg::MatrixTransform>>* tileMap,
+  std::list<osg::Node*>* toDelete, ViewerWidget* ViewerWindow)
+//  : _x(qFloor(x / 16.) * 16 + 8), _y(y), _z(qFloor(z / 16.) * 16 + 8), 
+  : _x(qFloor(x / 8.) * 8), _y(y), _z(qFloor(z / 8.) * 8), 
+  _clb(new bombCallback), _tank(tank), _typeMap(typeMap), _tileMap(tileMap), 
+  _toDelete(toDelete), _ViewerWindow(ViewerWindow), _parentTank(parentTank)
+{
+  this->setUpdateCallback(_clb);
+
+  osg::Matrix m; // перемещаем в точку спавна
+  m.makeTranslate(_x, _y, _z);
+  this->setMatrix(m); // наследуется от MatrixTransform для перемещения
+
+  osg::ref_ptr<osg::Node> node = // читаем модельку
+    osgDB::readNodeFile("./Resources/bomb/Bomb.3ds.90,0,0.rot.40.scale");
+  osg::ref_ptr<osg::Image> image = // читаем текстуру
+    osgDB::readImageFile("./Resources/bomb/Albedo.png");
+
+  // устанавливаем текстуру
+  osg::StateSet* state = node->getOrCreateStateSet();
+  osg::ref_ptr<osg::Texture2D> texture = new osg::Texture2D;
+  texture->setImage(image.get());
+  state->setTextureAttributeAndModes(0, texture.get());
+
+  this->addChild(node.get());
+}
+
+bool bomb::destroyTilesAt(int x, int z)
+{
+  std::map<osg::Vec2i, blockType>::const_iterator a;
+  bool stop = false;
+
+  // если по данным координатам есть блок
+  if ((a = _typeMap->find({ x, z })) != _typeMap->end())
+    if ((*a).second == blockType::BRICK)
+    {
+      // уничтожаем блок
+      _toDelete->push_back((*_tileMap)[{ x, z }]);
+      _typeMap->erase(a);
+      stop = true;
+    }
+    else
+      stop = true;
+
+  return stop;
+}
+
+void bomb::destroyTanksAt(int fromX, int toX, int fromZ, int toZ)
+{
+  // по танкам
+  for (auto it = _tank->cbegin(); it != _tank->end(); ++it)
+  {
+    int tankX = (*it)->GetXCoord();
+    int tankZ = (*it)->GetZCoord();
+    if (tankX > fromX && tankX < toX)
+      if (tankZ > fromZ && tankZ < toZ)
+      {
+        tank* attackedEnemy = (*it).get();
+
+        if (attackedEnemy->IsEnabled())
+        {
+          // создаем взрыв
+          bang* bng = new bang((*it)->GetXCoord(), -4, (*it)->GetZCoord(), _toDelete);
+          this->getParent(0)->addChild(bng);
+
+          // уничтожаем танк
+          attackedEnemy->Disable(); // отключаем его
+          _toDelete->push_back(attackedEnemy); // ставим в очередь на удаление со сцены
+
+          // увеличиваем число убийств (самоубийство не считается)
+          if (_parentTank != attackedEnemy)
+            QApplication::postEvent(_ViewerWindow,
+            new tankKilledSomebody(_parentTank->GetPlayerNum(), _parentTank->AddKill()));
+
+          // через какое-то время противнек зареспавнится
+          ViewerWidget* vw = _ViewerWindow;
+          QTimer::singleShot(3000, vw, [attackedEnemy, vw]
+            { 
+              QApplication::postEvent(vw, new tankNeedRespawn(attackedEnemy)); 
+            });
+        }
+      }
+  }
+}
+
+void bomb::Explode()
+{
+  std::map<osg::Vec2i, blockType>::const_iterator a;
+  bool stop = false;
+  int bombX = _x / 8;
+  int bombZ = _z / 8;
+  int fromX, toX, fromZ, toZ;
+  bool pr1, pr2;
+  
+  // уничтожаем первый попавшийся блок с каждой стороны от бомбы
+  // вверху
+  for (toZ = bombZ - 1; toZ < bombZ + 5; toZ++)
+  {
+    // создаем взрыв
+    bang* bng = new bang(_x, -3, toZ * 8, _toDelete);
+    this->getParent(0)->addChild(bng);
+    // уничтожаем тайлы
+    pr1 = destroyTilesAt(bombX - 1, toZ);
+    pr2 = destroyTilesAt(bombX, toZ);
+    if (pr1 || pr2)
+      break;
+  }
+  // внизу
+  for (fromZ = bombZ - 2; fromZ > bombZ - 6; fromZ--)
+  {
+    // создаем взрыв
+    bang* bng = new bang(_x, -3, fromZ * 8, _toDelete);
+    this->getParent(0)->addChild(bng);
+    // уничтожаем тайлы
+    pr1 = destroyTilesAt(bombX - 1, fromZ);
+    pr2 = destroyTilesAt(bombX, fromZ);
+    if (pr1 || pr2)
+      break;
+  }
+  // уничтожаем танки по вертикали (сверху и снизу от бомбы)
+  destroyTanksAt(_x - 8, _x + 8, fromZ * 8, toZ * 8);
+  // слева
+  for (fromX = bombX - 2; fromX > bombX - 6; fromX--)
+  {
+    // создаем взрыв
+    bang* bng = new bang(fromX * 8, -3, _z, _toDelete);
+    this->getParent(0)->addChild(bng);
+    // уничтожаем тайлы
+    pr1 = destroyTilesAt(fromX, bombZ - 1);
+    pr2 = destroyTilesAt(fromX, bombZ);
+    if (pr1 || pr2)
+      break;
+  }
+  // справа
+  for (toX = bombX + 1; toX < bombX + 5; toX++)
+  {
+    // создаем взрыв
+    bang* bng = new bang(toX * 8, -3, _z, _toDelete);
+    this->getParent(0)->addChild(bng);
+    // уничтожаем тайлы
+    pr1 = destroyTilesAt(toX, bombZ - 1);
+    pr2 = destroyTilesAt(toX, bombZ);
+    if (pr1 || pr2)
+      break;
+  }
+  // уничтожаем танки по горизонтали (слева и справа от бомбы)
+  destroyTanksAt(fromX * 8, toX * 8, _z - 8, _z + 8);
+
+  // уничтожаем снаряд
+  this->removeUpdateCallback(_clb);
+  _toDelete->push_back(this);
+}
+
+void bombCallback::operator()(osg::Node* nd, osg::NodeVisitor* ndv)
+{
+  if (_delay == 100)
+  {
+    bomb* bmb = dynamic_cast<bomb*>(nd);
+    bmb->Explode();
+  }
+  else
+    _delay++;
+  traverse(nd, ndv);
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////TANK//////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////
 
 const int SHOOT_TIMEOUT = 300; // задержка между выстрелами в мс
 
+class tankCallback : public osg::NodeCallback
+{
+public:
+  void operator()(osg::Node*, osg::NodeVisitor*) override;
+private:
+  bool delay = false;
+};
+
 // конструктор
-tank::tank(int x, int z, std::string texNum, int controlDevice, std::vector<osg::ref_ptr<tank>>* tank,
-  std::map<osg::Vec2i, blockType>* typeMap, std::map<osg::Vec2i, 
-  osg::ref_ptr<osg::MatrixTransform>>* tileMap, std::list<osg::Node*>* toDelete)
+tank::tank(int x, int z, int playerNum, int controlDevice, std::vector<osg::ref_ptr<tank>>* tank,
+  std::map<osg::Vec2i, blockType>* typeMap, std::map<osg::Vec2i, osg::ref_ptr<osg::MatrixTransform>>* tileMap, 
+  std::list<osg::Node*>* toDelete, ViewerWidget* ViewerWindow)
   : _timer(new QDeadlineTimer(SHOOT_TIMEOUT)), _rMt(new MatrixTransform), _typeMap(typeMap), 
-  _tileMap(tileMap), _toDelete(toDelete), _texNum(texNum), _tank(tank), _controlDevice(controlDevice), 
-  _x(x), _z(z), _type(type::LIGHT)
+  _tileMap(tileMap), _toDelete(toDelete), _texNum(std::to_string(playerNum % 13)), _tank(tank), 
+  _controlDevice(controlDevice), _player(playerNum), _x(x), _z(z), _currentType(type::LIGHT),
+  _ViewerWindow(ViewerWindow)
 {
   this->setDataVariance(osg::Object::DYNAMIC);
 
@@ -379,7 +605,7 @@ tank::tank(int x, int z, std::string texNum, int controlDevice, std::vector<osg:
   osg::ref_ptr<osg::Node> node = // читаем модельку
     osgDB::readNodeFile("./Resources/lightTank/bradle.3ds.15.scale.90,90,0.rot");
   osg::ref_ptr<osg::Image> image = // читаем текстуру
-    osgDB::readImageFile("./Resources/lightTank/" + texNum + ".png");
+    osgDB::readImageFile("./Resources/lightTank/" + _texNum + ".png");
 
   // устанавливаем текстуру
   osg::StateSet* state = node->getOrCreateStateSet();
@@ -399,21 +625,29 @@ void tank::ChangeType()
   osg::ref_ptr<osg::Node> node;
   osg::ref_ptr<osg::Image> image;
   
-  if (_type == type::HEAVY)
+  if (_typeForChange == type::LIGHT)
   {
     node = // читаем модельку
       osgDB::readNodeFile("./Resources/lightTank/bradle.3ds.15.scale.90,90,0.rot");
     image = // читаем текстуру
       osgDB::readImageFile("./Resources/lightTank/" + _texNum + ".png");
-    _type = type::LIGHT;
+    _currentType = type::LIGHT;
   }
-  else if (_type == type::LIGHT)
+  else if (_typeForChange == type::HEAVY)
   {
     node = // читаем модельку
       osgDB::readNodeFile("./Resources/heavyTank/Leopard 2A4.3ds.5.scale.90,180,0.rot");
     image = // читаем текстуру
       osgDB::readImageFile("./Resources/heavyTank/" + _texNum + ".bmp");
-    _type = type::HEAVY;
+    _currentType = type::HEAVY;
+  }
+  else if (_typeForChange == type::MOTO)
+  {
+    node = // читаем модельку
+      osgDB::readNodeFile("./Resources/motoTank/Scooter.3ds.15.scale.90,0,0.rot");
+    image = // читаем текстуру
+      osgDB::readImageFile("./Resources/motoTank/" + _texNum + ".bmp");
+    _currentType = type::MOTO;
   }
 
   // устанавливаем текстуру
@@ -425,6 +659,11 @@ void tank::ChangeType()
   _rMt->addChild(node.get());
 
   _needTypeChange = false;
+}
+
+const int tank::GetPlayerNum() const
+{
+  return _player;
 }
 
 const int tank::AddKill()
@@ -447,14 +686,15 @@ const bool tank::NeedTypeChange() const
   return _needTypeChange;
 }
 
-void tank::SetNeedTypeChange()
+void tank::SetNeedTypeChange(type newType)
 {
   _needTypeChange = true;
+  _typeForChange = newType;
 }
 
 const tank::type tank::GetType() const
 {
-  return _type;
+  return _currentType;
 }
 
 void tank::SetXCoord(int x)
@@ -488,7 +728,7 @@ void tank::Stop()
   _go = false;
 }
 
-const bool tank::Enabled() const
+const bool tank::IsEnabled() const
 {
   return _enabled;
 }
@@ -497,39 +737,40 @@ const bool tank::Enabled() const
 void tank::Move()
 {
   // вычисление точек коллизии в зависимости от направления танка
-  osg::Vec2i cpt1, cpt2;
+  osg::Vec2i tankCollizionPt1, tankCollizionPt2;
+  osg::Vec2i tileCollizionPt1, tileCollizionPt2;
   switch (_goDir)
   {
     case(direction::UP) :
     {
-      cpt1 = { _x - 7, _z + 7 };
-      cpt2 = { _x + 7, _z + 7 };
-      _collisionPt1 = { (_x - 8) / 8, (_z + 8) / 8 };
-      _collisionPt2 = { static_cast<int>(ceil((_x - 1) / 8.)), (_z + 8) / 8 };
+      tankCollizionPt1 = { _x - 7, _z + 7 };
+      tankCollizionPt2 = { _x + 7, _z + 7 };
+      tileCollizionPt1 = { (_x - 8) / 8, (_z + 8) / 8 };
+      tileCollizionPt2 = { static_cast<int>(ceil((_x - 1) / 8.)), (_z + 8) / 8 };
       break;
     }
     case(direction::DOWN) :
     {
-      cpt1 = { _x - 7, _z - 7 };
-      cpt2 = { _x + 7, _z - 7 };
-      _collisionPt1 = { (_x - 8) / 8, (_z - 8) / 8 };
-      _collisionPt2 = { static_cast<int>(ceil((_x - 1) / 8.)), (_z - 8) / 8 };
+      tankCollizionPt1 = { _x - 7, _z - 7 };
+      tankCollizionPt2 = { _x + 7, _z - 7 };
+      tileCollizionPt1 = { (_x - 8) / 8, (_z - 8) / 8 };
+      tileCollizionPt2 = { static_cast<int>(ceil((_x - 1) / 8.)), (_z - 8) / 8 };
       break;
     }
     case(direction::LEFT) :
     {
-      cpt1 = { _x - 7, _z + 7 };
-      cpt2 = { _x - 7, _z - 7 };
-      _collisionPt1 = { (_x - 8) / 8, (_z - 8) / 8 };
-      _collisionPt2 = { (_x - 8) / 8, static_cast<int>(ceil((_z) / 8.)) };
+      tankCollizionPt1 = { _x - 7, _z + 7 };
+      tankCollizionPt2 = { _x - 7, _z - 7 };
+      tileCollizionPt1 = { (_x - 8) / 8, (_z - 8) / 8 };
+      tileCollizionPt2 = { (_x - 8) / 8, static_cast<int>(ceil((_z) / 8.)) };
       break;
     }
     case(direction::RIGHT) :
     {
-      cpt1 = { _x + 7, _z + 7 };
-      cpt2 = { _x + 7, _z - 7 };
-      _collisionPt1 = { (_x + 8) / 8, (_z - 8) / 8 };
-      _collisionPt2 = { (_x + 8) / 8, static_cast<int>(ceil((_z) / 8.)) };
+      tankCollizionPt1 = { _x + 7, _z + 7 };
+      tankCollizionPt2 = { _x + 7, _z - 7 };
+      tileCollizionPt1 = { (_x + 8) / 8, (_z - 8) / 8 };
+      tileCollizionPt2 = { (_x + 8) / 8, static_cast<int>(ceil((_z) / 8.)) };
       break;
     }
   }
@@ -538,7 +779,7 @@ void tank::Move()
   bool aGo = false, bGo = false, tStop = false;
 
   // определение коллизий с блоками
-  if ((a = _typeMap->find(_collisionPt1)) != _typeMap->end())
+  if ((a = _typeMap->find(tileCollizionPt1)) != _typeMap->end())
   {
     if ((*a).second == blockType::ICE)
     {
@@ -550,7 +791,7 @@ void tank::Move()
   }
   else
     aGo = true;
-  if ((b = _typeMap->find(_collisionPt2)) != _typeMap->end())
+  if ((b = _typeMap->find(tileCollizionPt2)) != _typeMap->end())
   {
     if ((*b).second == blockType::ICE)
     {
@@ -571,18 +812,18 @@ void tank::Move()
     {
       if ((*it).get() != this && (*it)->_enabled)
       {
-        if (cpt1[0] > (*it)->_x - 8 && cpt1[0] < (*it)->_x + 8 &&
-          cpt1[1] > (*it)->_z - 8 && cpt1[1] < (*it)->_z + 8)
+        if (tankCollizionPt1[0] > (*it)->_x - 8 && tankCollizionPt1[0] < (*it)->_x + 8 &&
+          tankCollizionPt1[1] > (*it)->_z - 8 && tankCollizionPt1[1] < (*it)->_z + 8)
           tStop = true; // впереди танк
-        if (cpt2[0] > (*it)->_x - 8 && cpt2[0] < (*it)->_x + 8 &&
-          cpt2[1] > (*it)->_z - 8 && cpt2[1] < (*it)->_z + 8)
+        if (tankCollizionPt2[0] > (*it)->_x - 8 && tankCollizionPt2[0] < (*it)->_x + 8 &&
+          tankCollizionPt2[1] > (*it)->_z - 8 && tankCollizionPt2[1] < (*it)->_z + 8)
           tStop = true;
       }
     }
     // впереди чисто, двигаемся
     if (!tStop)
     {
-      if (_type == type::HEAVY)
+      if (_currentType == type::HEAVY)
       {
         if (_goDir == direction::UP)
           _z++;
@@ -593,7 +834,7 @@ void tank::Move()
         if (_goDir == direction::RIGHT)
           _x++;
       }
-      else
+      else if ((_currentType == type::LIGHT))
       {
         if (_goDir == direction::UP)
           _z+=2;
@@ -603,6 +844,17 @@ void tank::Move()
           _x-=2;
         if (_goDir == direction::RIGHT)
           _x+=2;
+      }
+      else if ((_currentType == type::MOTO))
+      {
+        if (_goDir == direction::UP)
+          _z += 3;
+        if (_goDir == direction::DOWN)
+          _z -= 3;
+        if (_goDir == direction::LEFT)
+          _x -= 3;
+        if (_goDir == direction::RIGHT)
+          _x += 3;
       }
     }
   }
@@ -706,10 +958,19 @@ void tank::Shoot()
   // обеспечиваем задержку при стрельбе
   if (_timer->hasExpired())
   {
-    _projectile = new projectile(_x - 4, -4, _z - 4, _curDir, this, 
-      _tank, _typeMap, _tileMap, _toDelete);
-    this->getParent(0)->addChild(_projectile.get());
-    _projectile->setName(this->getName() + " - projectile");
+    if (_currentType == type::MOTO)
+    {
+      osg::ref_ptr<bomb> droppedBomb = new bomb(_x, -4, _z, this, _tank, _typeMap, _tileMap, _toDelete, _ViewerWindow);
+      this->getParent(0)->addChild(droppedBomb.get());
+      droppedBomb->setName(this->getName() + " - bomb");
+    }
+    else
+    {
+      osg::ref_ptr<projectile> prj = new projectile(_x - 4, -4, _z - 4, _curDir, this,
+        _tank, _typeMap, _tileMap, _toDelete, _ViewerWindow);
+      this->getParent(0)->addChild(prj.get());
+      prj->setName(this->getName() + " - projectile");
+    }
     // обновляем таймер
     _timer->setRemainingTime(SHOOT_TIMEOUT);
   }
