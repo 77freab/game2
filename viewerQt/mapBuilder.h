@@ -1,8 +1,10 @@
 #pragma once
 
 #include <string>
-#include <osg/MatrixTransform>
+
 #include <QXmlStreamReader>
+
+#include <osg/MatrixTransform>
 
 enum class blockType
 {
@@ -11,11 +13,7 @@ enum class blockType
   ARMOR = 2,
   WATER = 3,
   BUSHES = 4,
-  ICE = 5,
-  PRJ_UP = 6,
-  PRJ_DOWN = 7,
-  PRJ_LEFT = 8,
-  PRJ_RIGHT = 9
+  ICE = 5
 };
 
 class mapBuilder
@@ -30,6 +28,7 @@ public:
 private:
   void skipUnknownElement(QXmlStreamReader& reader);
   osg::ref_ptr<osg::Geode> makeNewTile(blockType bt, bool pr);
+
   std::vector<osg::ref_ptr<osg::Geode>> _tiles;
-  std::vector<std::string> blockTex;
+  std::vector<std::string> _blockTex;
 };

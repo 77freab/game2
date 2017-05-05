@@ -1,27 +1,30 @@
 #pragma once
 
+#include <QBoxLayout>
 #include <QEvent>
 #include <QWidget>
-#include <QBoxLayout>
 #include <QPushButton>
+#include <QTimer>
 #include <QtWidgets/QPlainTextEdit>
 #include <QtWidgets/QTreeWidget>
-#include <QTimer>
 
 #include <osgQt/GraphicsWindowQt>
 #include <osgViewer/ViewerEventHandlers>
 
 #include <SDL.h>
 
-class tank;
+#include "mapBuilder.h"
+#include "lightTank.h"
+#include "heavyTank.h"
+#include "motorcycle.h"
+
 class keyboardEventHandler;
-enum class direction;
 
 // кастомное событие для увеличения счетчика убийств
-class tankKilledSomebody : public QEvent
+class vehicleKilledSomebody : public QEvent
 {
 public:
-  tankKilledSomebody(const int player, const int killCount);
+  vehicleKilledSomebody(const int player, const int killCount);
   int GetKillCount() const;
   int GetPlayer() const;
 private:
@@ -30,13 +33,13 @@ private:
 };
 
 // кастомное событие о необходимости возрождения танка
-class tankNeedRespawn : public QEvent
+class vehicleNeedRespawn : public QEvent
 {
 public:
-  tankNeedRespawn(const osg::ref_ptr<tank> tank);
-  osg::ref_ptr<tank> GetTank() const;
+  vehicleNeedRespawn(const osg::ref_ptr<vehicle> vehicle);
+  osg::ref_ptr<vehicle> GetVehicle() const;
 private:
-  osg::ref_ptr<tank> _tank;
+  osg::ref_ptr<vehicle> _vehicle;
 };
 
 // главное окно
@@ -50,8 +53,8 @@ private:
   QString controlsName(int controlDevice);
   void changeControls(int player, int controlDevice);
   void addPlayer();
-  void clearPlaceForTank(int x, int z);
-  void spawnPlayer(osg::ref_ptr<tank> tank);
+  void clearPlaceForVehicle(int x, int z);
+  void spawnPlayer(osg::ref_ptr<vehicle> vehicle);
   void restart();
   osg::ref_ptr<osg::Node> createScene();
   osgQt::GLWidget* addViewWidget(osgQt::GraphicsWindowQt* gw, osg::Node* scene);
@@ -81,7 +84,7 @@ private:
   direction _up, _down, _left, _right; // направления движения зависящие от положения камеры
   keyboardEventHandler* _keyboardEventHandler;
 
-  std::vector<osg::ref_ptr<tank>> _tank; // вектор содержащий все танки
+  std::vector<osg::ref_ptr<vehicle>> _vehicles; // вектор содержащий все танки
   std::list<osg::Node*> _toDelete; // очередь на удаление
   std::map<osg::Vec2i, blockType> _typeMap; // список координат и типов тайлов расположенных по эти координатам
   std::map<osg::Vec2i, osg::ref_ptr<osg::MatrixTransform>> _tileMap; // список координат и ссылок на сами тайлы расположенные по этим координатам

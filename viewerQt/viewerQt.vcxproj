@@ -68,11 +68,25 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="bang.cpp" />
+    <ClCompile Include="bomb.cpp" />
+    <ClCompile Include="heavyTank.cpp" />
+    <ClCompile Include="lightTank.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="motorcycle.cpp" />
+    <ClCompile Include="projectile.cpp" />
     <ClCompile Include="tank.cpp" />
     <ClCompile Include="mapBuilder.cpp" />
+    <ClCompile Include="vehicle.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="bang.h" />
+    <ClInclude Include="bomb.h" />
+    <ClInclude Include="heavyTank.h" />
+    <ClInclude Include="lightTank.h" />
+    <ClInclude Include="motorcycle.h" />
+    <ClInclude Include="projectile.h" />
+    <ClInclude Include="vehicle.h" />
     <CustomBuild Include="tank.h">
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
       </Message>

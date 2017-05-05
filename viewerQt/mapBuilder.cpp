@@ -1,8 +1,11 @@
-#include "mapBuilder.h"
 #include <QFile>
-#include <osgDB/ReadFile>
-#include <osg/Texture2D>
+#include <QXmlStreamReader>
+
 #include <osg/MatrixTransform>
+#include <osg/Texture2D>
+#include <osgDB/ReadFile>
+
+#include "mapBuilder.h"
 
 osg::ref_ptr<osg::Geode> mapBuilder::makeNewTile(blockType bt, bool pr)
 {
@@ -108,7 +111,7 @@ osg::ref_ptr<osg::Geode> mapBuilder::makeNewTile(blockType bt, bool pr)
   geom->setTexCoordArray(0, texCoord);
   
   // установка текстуры
-  osg::ref_ptr<osg::Image> image = osgDB::readImageFile(blockTex[static_cast<int>(bt)]);
+  osg::ref_ptr<osg::Image> image = osgDB::readImageFile(_blockTex[static_cast<int>(bt)]);
   osg::ref_ptr<osg::Texture2D> texture = new osg::Texture2D(image);
   //texture->setUnRefImageDataAfterApply(true);
   texture->setWrap(osg::Texture2D::WRAP_T, osg::Texture2D::CLAMP_TO_EDGE);
@@ -119,44 +122,6 @@ osg::ref_ptr<osg::Geode> mapBuilder::makeNewTile(blockType bt, bool pr)
 
   osg::ref_ptr<osg::Geode> geode = new osg::Geode;
   geode->addDrawable(geom);
-  
-  // если это снаряд добавляем 2 плоскость
-  if (static_cast<int>(bt) > 5)
-  {
-    osg::ref_ptr<osg::Geometry> hGeom = new osg::Geometry(*geom);
-    osg::ref_ptr<osg::Vec3Array> hVertices = new osg::Vec3Array;
-    osg::ref_ptr<osg::Vec3Array> hNormals = new osg::Vec3Array;
-    hNormals->setBinding(osg::Array::BIND_OVERALL);
-
-    if (bt == blockType::PRJ_DOWN || bt == blockType::PRJ_UP)
-    {
-      // вершины
-      hVertices->push_back(osg::Vec3(4, -4, 0)); // 1
-      hVertices->push_back(osg::Vec3(4,  4, 0)); // 2
-      hVertices->push_back(osg::Vec3(4,  4, 8)); // 3
-      hVertices->push_back(osg::Vec3(4, -4, 8)); // 4
-
-      // нормаль
-      hNormals->push_back(osg::Vec3(1, 0, 0));
-    }
-    else
-    {
-      // вершины
-      hVertices->push_back(osg::Vec3(0,  4, 4)); // 1
-      hVertices->push_back(osg::Vec3(8,  4, 4)); // 2
-      hVertices->push_back(osg::Vec3(8, -4, 4)); // 3
-      hVertices->push_back(osg::Vec3(0, -4, 4)); // 4
-
-      // нормаль
-      hNormals->push_back(osg::Vec3(0, 0, 1));
-    }
-
-    // геометрия
-    hGeom->setVertexArray(hVertices);
-    hGeom->setNormalArray(hNormals);
-
-    geode->addDrawable(hGeom);
-  }
 
   _tiles[static_cast<int>(bt)] = geode;
   return geode;
@@ -179,17 +144,12 @@ osg::ref_ptr<osg::MatrixTransform> mapBuilder::GetTile(int x, int y, int z, bloc
 
 mapBuilder::mapBuilder()
 {
-  blockTex.push_back("./Resources/blocks/BORDER.png");
-  blockTex.push_back("./Resources/blocks/BRICK.png");
-  blockTex.push_back("./Resources/blocks/ARMOR.png");
-  blockTex.push_back("./Resources/blocks/WATER.png");
-  blockTex.push_back("./Resources/blocks/BUSHES.png");
-  blockTex.push_back("./Resources/blocks/ICE.png");
-
-  blockTex.push_back("./Resources/projectile/UP.png");
-  blockTex.push_back("./Resources/projectile/DOWN.png");
-  blockTex.push_back("./Resources/projectile/LEFT.png");
-  blockTex.push_back("./Resources/projectile/RIGHT.png");
+  _blockTex.push_back("./Resources/blocks/BORDER.png");
+  _blockTex.push_back("./Resources/blocks/BRICK.png");
+  _blockTex.push_back("./Resources/blocks/ARMOR.png");
+  _blockTex.push_back("./Resources/blocks/WATER.png");
+  _blockTex.push_back("./Resources/blocks/BUSHES.png");
+  _blockTex.push_back("./Resources/blocks/ICE.png");
 }
 
 void mapBuilder::skipUnknownElement(QXmlStreamReader& reader)
