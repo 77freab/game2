@@ -75,7 +75,6 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="motorcycle.cpp" />
     <ClCompile Include="projectile.cpp" />
-    <ClCompile Include="tank.cpp" />
     <ClCompile Include="mapBuilder.cpp" />
     <ClCompile Include="vehicle.cpp" />
   </ItemGroup>
@@ -87,20 +86,6 @@
     <ClInclude Include="motorcycle.h" />
     <ClInclude Include="projectile.h" />
     <ClInclude Include="vehicle.h" />
-    <CustomBuild Include="tank.h">
-      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-      </Message>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-      </Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-      </Command>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-      </Message>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-      </Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-      </Command>
-    </CustomBuild>
     <ClInclude Include="main.h" />
     <ClInclude Include="mapBuilder.h" />
   </ItemGroup>

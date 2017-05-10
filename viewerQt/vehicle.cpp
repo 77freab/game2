@@ -22,7 +22,7 @@ vehicle::vehicle(int x, int z, int speed, type startType, int playerNum, int con
   _currentType(startType)
 {
   // дополнительный MatrixTransform для поворота
-  this->addChild(_rMt.get());
+  addChild(_rMt.get());
 }
 
 // просчет коллизий и движение
@@ -181,20 +181,20 @@ void vehicle::Move()
   // перемещаем танк
   osg::Matrix mT;
   mT.makeTranslate(_x, 0, _z);
-  this->setMatrix(mT);
+  setMatrix(mT);
 }
 
 void vehicle::Enable()
 {
   _clb = new vehicleCallback;
-  this->setUpdateCallback(_clb);
+  setUpdateCallback(_clb);
   _shotDelayTimer->setRemainingTime(SHOT_TIMEOUT);
   _enabled = true;
 }
 
 void vehicle::Disable()
 {
-  this->removeUpdateCallback(_clb); // чтоб не мог двигаться
+  removeUpdateCallback(_clb); // чтоб не мог двигаться
   _clb = nullptr;
   _shotDelayTimer->setRemainingTime(-1); // чтоб не мог стрелять
   _enabled = false; // чтоб коллизии для него не расчитывались

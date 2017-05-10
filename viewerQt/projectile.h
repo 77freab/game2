@@ -34,6 +34,4 @@ private:
   int _speed; // light 4, heavy 2
   osg::ref_ptr<projectileCallback> _clb;
   ViewerWidget* _ViewerWindow;
-  osg::ref_ptr<osg::Node> _model;
-  osg::ref_ptr<osg::Image> _textureImage;
 };

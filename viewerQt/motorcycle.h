@@ -2,6 +2,8 @@
 
 #include "vehicle.h"
 
+const int MAX_NUM_BOMBS = 5;
+
 class motorcycle : public vehicle
 {
 public:
@@ -13,7 +15,9 @@ public:
     ViewerWidget* ViewerWindow);
 
   void Shoot() override;
+  inline void BombExploded()
+  { _numBombs--; }
 
 private:
-  osg::ref_ptr<osg::Node> _model;
+  int _numBombs;
 };

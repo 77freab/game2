@@ -13,8 +13,5 @@ public:
     ViewerWidget* ViewerWindow);
 
   void Shoot() override;
-
-private:
-  osg::ref_ptr<osg::Node> _model;
 };
 

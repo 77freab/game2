@@ -12,27 +12,27 @@ lightTank::lightTank(int x, int z, int playerNum, int controlDevice,
   ViewerWidget* ViewerWindow)
   : vehicle(x, z, 2, type::LIGHT, playerNum, controlDevice, vehicles, typeMap, tileMap, toDelete, ViewerWindow)
 {
-  this->setDataVariance(osg::Object::DYNAMIC);
+  setDataVariance(osg::Object::DYNAMIC);
 
-  osg::Matrix m; // перемещаем в точку спавна
+  // перемещаем в точку спавна
+  osg::Matrix m;
   m.makeTranslate(GetXCoord(), 0, GetZCoord());
-  this->setMatrix(m); // наследуется от MatrixTransform для перемещения
+  setMatrix(m); // наследуется от MatrixTransform для перемещения
 
-  // читаем модельку если она не загружена ранее
-  if (_model == nullptr)
-    _model = osgDB::readNodeFile("./Resources/lightTank/bradle.3ds.15.scale.90,90,0.rot");
-
+  // читаем модельку
+  osg::ref_ptr<osg::Node> model = osgDB::readNodeFile
+    ("./Resources/lightTank/bradle.3ds.15.scale.90,90,0.rot");
   // читаем текстуру
-  osg::ref_ptr<osg::Image> image =
-    osgDB::readImageFile("./Resources/lightTank/" + std::to_string(GetPlayerNum() % 13) + ".png");
+  osg::ref_ptr<osg::Image> image = osgDB::readImageFile
+    ("./Resources/lightTank/" + std::to_string(GetPlayerNum() % 13) + ".png");
 
   // устанавливаем текстуру
-  osg::StateSet* state = _model->getOrCreateStateSet();
+  osg::StateSet* state = model->getOrCreateStateSet();
   osg::ref_ptr<osg::Texture2D> texture = new osg::Texture2D;
   texture->setImage(image.get());
   state->setTextureAttributeAndModes(0, texture.get());
 
-  getRotateMT()->addChild(_model.get());
+  getRotateMT()->addChild(model.get());
 }
 
 // стрельба
@@ -43,8 +43,8 @@ void lightTank::Shoot()
   {
     osg::ref_ptr<projectile> prj = new projectile(GetXCoord() - 4, -4, GetZCoord() - 4,
       4, GetCurDir(), this, _vehicles, _typeMap, _tileMap, _toDelete, _ViewerWindow);
-    this->getParent(0)->addChild(prj.get());
-    prj->setName(this->getName() + " - projectile");
+    getParent(0)->addChild(prj.get());
+    prj->setName(getName() + " - projectile");
     // обновляем таймер
     getShotDelayTimer()->setRemainingTime(SHOT_TIMEOUT);
   }

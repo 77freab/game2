@@ -33,23 +33,25 @@ projectile::projectile(int x, int y, int z, int speed, direction dir, vehicle* p
   _parentVehicle(parentVehicle), _vehicles(vehicles), _typeMap(typeMap), _tileMap(tileMap),
   _toDelete(toDelete), _ViewerWindow(ViewerWindow)
 {
-  this->setDataVariance(osg::Object::DYNAMIC);
-  this->setUpdateCallback(_clb);
+  setDataVariance(osg::Object::DYNAMIC);
+  setUpdateCallback(_clb);
 
-  osg::Matrix m; // перемещаем в точку спавна
+  // перемещаем в точку спавна
+  osg::Matrix m;
   m.makeTranslate(_x, _y, _z);
-  this->setMatrix(m); // наследуется от MatrixTransform для перемещения
+  setMatrix(m); // наследуется от MatrixTransform для перемещения
   
-  // читаем текстуру если она не загружена ранее
-  if (_textureImage == nullptr)
-    _textureImage = osgDB::readImageFile("./Resources/projectile/Bullet_U.bmp");
+  // читаем текстуру
+  osg::ref_ptr<osg::Image> textureImage = osgDB::readImageFile
+    ("./Resources/projectile/Bullet_U.bmp");
+  osg::ref_ptr<osg::Node> model;
 
   switch (_dir)
   {
     case(direction::UP) :
     {
       // поворачиваем модельку под необходимое направление
-      _model = osgDB::readNodeFile
+      model = osgDB::readNodeFile
         ("./Resources/projectile/Bullet.3ds.-90,0,0.rot.4,-4,4.trans");
       _tileCollizionPt1 = { (_x + 2) / 8, (_z + 8) / 8 };
       _tileCollizionPt2 = { (_x + 6) / 8, (_z + 8) / 8 };
@@ -59,14 +61,14 @@ projectile::projectile(int x, int y, int z, int speed, direction dir, vehicle* p
         _tileCollizionPt1[1] = (_z + 8) / 8;
         _tileCollizionPt2[1] = (_z + 8) / 8;
         _mT.makeTranslate(_x, _y, _z);
-        this->setMatrix(_mT);
+        setMatrix(_mT);
       };
       break;
     }
     case(direction::DOWN) :
     {
       // поворачиваем модельку под необходимое направление
-      _model = osgDB::readNodeFile
+      model = osgDB::readNodeFile
         ("./Resources/projectile/Bullet.3ds.90,0,0.rot.4,4,4.trans");
       _tileCollizionPt1 = { (_x + 2) / 8, (_z) / 8 };
       _tileCollizionPt2 = { (_x + 6) / 8, (_z) / 8 };
@@ -76,14 +78,14 @@ projectile::projectile(int x, int y, int z, int speed, direction dir, vehicle* p
         _tileCollizionPt1[1] = (_z) / 8;
         _tileCollizionPt2[1] = (_z) / 8;
         _mT.makeTranslate(_x, _y, _z);
-        this->setMatrix(_mT);
+        setMatrix(_mT);
       };
       break;
     }
     case(direction::LEFT) :
     {
       // поворачиваем модельку под необходимое направление
-      _model = osgDB::readNodeFile
+      model = osgDB::readNodeFile
         ("./Resources/projectile/Bullet.3ds.0,0,-90.rot.4,0,0.trans");
       _tileCollizionPt1 = { (_x) / 8, (_z + 2) / 8 };
       _tileCollizionPt2 = { (_x) / 8, (_z + 6) / 8 };
@@ -93,14 +95,14 @@ projectile::projectile(int x, int y, int z, int speed, direction dir, vehicle* p
         _tileCollizionPt1[0] = (_x) / 8;
         _tileCollizionPt2[0] = (_x) / 8;
         _mT.makeTranslate(_x, _y, _z);
-        this->setMatrix(_mT);
+        setMatrix(_mT);
       };
       break;
     }
     case(direction::RIGHT) :
     {
       // поворачиваем модельку под необходимое направление
-      _model = osgDB::readNodeFile
+      model = osgDB::readNodeFile
         ("./Resources/projectile/Bullet.3ds.0,0,90.rot.4,0,0.trans");
       _tileCollizionPt1 = { (_x + 8) / 8, (_z + 2) / 8 };
       _tileCollizionPt2 = { (_x + 8) / 8, (_z + 6) / 8 };
@@ -110,19 +112,19 @@ projectile::projectile(int x, int y, int z, int speed, direction dir, vehicle* p
         _tileCollizionPt1[0] = (_x + 8) / 8;
         _tileCollizionPt2[0] = (_x + 8) / 8;
         _mT.makeTranslate(_x, _y, _z);
-        this->setMatrix(_mT);
+        setMatrix(_mT);
       };
       break;
     }
   }
 
   // устанавливаем текстуру
-  osg::StateSet* state = _model->getOrCreateStateSet();
+  osg::StateSet* state = model->getOrCreateStateSet();
   osg::ref_ptr<osg::Texture2D> texture = new osg::Texture2D;
-  texture->setImage(_textureImage.get());
+  texture->setImage(textureImage.get());
   state->setTextureAttributeAndModes(0, texture.get());
 
-  this->addChild(_model.get());
+  addChild(model.get());
 }
 
 // просчет коллизий
@@ -209,7 +211,7 @@ void projectile::TryToMove()
   if (projDel)
   {
     // уничтожаем снаряд
-    this->removeUpdateCallback(_clb);
+    removeUpdateCallback(_clb);
     _toDelete->push_back(this);
   }
 

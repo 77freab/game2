@@ -8,6 +8,8 @@
 #include "bang.h"
 #include "main.h"
 
+const int BOMB_BANG_DELAY = 100;
+
 class bombCallback : public osg::NodeCallback
 {
 public:
@@ -18,13 +20,12 @@ private:
 
 void bombCallback::operator()(osg::Node* nd, osg::NodeVisitor* ndv)
 {
-  if (_delay == 100)
+  if (_delay == BOMB_BANG_DELAY)
   {
     bomb* bmb = dynamic_cast<bomb*>(nd);
     bmb->Explode();
   }
-  else
-    _delay++;
+  _delay++;
   traverse(nd, ndv);
 }
 
@@ -38,16 +39,19 @@ bomb::bomb(int x, int y, int z, vehicle* parentVehicle,
   _clb(new bombCallback), _vehicles(vehicles), _typeMap(typeMap), _tileMap(tileMap),
   _toDelete(toDelete), _ViewerWindow(ViewerWindow), _parentVehicle(parentVehicle)
 {
-  this->setUpdateCallback(_clb);
+  setUpdateCallback(_clb);
 
-  osg::Matrix m; // перемещаем в точку спавна
+  // перемещаем в точку спавна
+  osg::Matrix m;
   m.makeTranslate(_x, _y, _z);
-  this->setMatrix(m); // наследуется от MatrixTransform для перемещения
+  setMatrix(m); // наследуется от MatrixTransform для перемещения
 
-  osg::ref_ptr<osg::Node> node = // читаем модельку
-    osgDB::readNodeFile("./Resources/bomb/Bomb.3ds.90,0,0.rot.40.scale");
-  osg::ref_ptr<osg::Image> image = // читаем текстуру
-    osgDB::readImageFile("./Resources/bomb/Albedo.png");
+  // читаем модельку
+  osg::ref_ptr<osg::Node> node = osgDB::readNodeFile
+    ("./Resources/bomb/Bomb.3ds.90,0,0.rot.40.scale");
+  // читаем текстуру
+  osg::ref_ptr<osg::Image> image = osgDB::readImageFile
+    ("./Resources/bomb/Albedo.png");
 
   // устанавливаем текстуру
   osg::StateSet* state = node->getOrCreateStateSet();
@@ -55,7 +59,7 @@ bomb::bomb(int x, int y, int z, vehicle* parentVehicle,
   texture->setImage(image.get());
   state->setTextureAttributeAndModes(0, texture.get());
 
-  this->addChild(node.get());
+  addChild(node.get());
 }
 
 bool bomb::destroyTilesAt(int x, int z)
@@ -94,7 +98,7 @@ void bomb::destroyVehiclesAt(int fromX, int toX, int fromZ, int toZ)
         {
           // создаем взрыв
           bang* bng = new bang((*it)->GetXCoord(), -4, (*it)->GetZCoord(), _toDelete);
-          this->getParent(0)->addChild(bng);
+          getParent(0)->addChild(bng);
 
           // уничтожаем танк
           attackedEnemy->Disable(); // отключаем его
@@ -131,7 +135,7 @@ void bomb::Explode()
   {
     // создаем взрыв
     bang* bng = new bang(_x, -3, toZ * 8, _toDelete);
-    this->getParent(0)->addChild(bng);
+    getParent(0)->addChild(bng);
     // уничтожаем тайлы
     pr1 = destroyTilesAt(bombX - 1, toZ);
     pr2 = destroyTilesAt(bombX, toZ);
@@ -143,7 +147,7 @@ void bomb::Explode()
   {
     // создаем взрыв
     bang* bng = new bang(_x, -3, fromZ * 8, _toDelete);
-    this->getParent(0)->addChild(bng);
+    getParent(0)->addChild(bng);
     // уничтожаем тайлы
     pr1 = destroyTilesAt(bombX - 1, fromZ);
     pr2 = destroyTilesAt(bombX, fromZ);
@@ -157,7 +161,7 @@ void bomb::Explode()
   {
     // создаем взрыв
     bang* bng = new bang(fromX * 8, -3, _z, _toDelete);
-    this->getParent(0)->addChild(bng);
+    getParent(0)->addChild(bng);
     // уничтожаем тайлы
     pr1 = destroyTilesAt(fromX, bombZ - 1);
     pr2 = destroyTilesAt(fromX, bombZ);
@@ -169,7 +173,7 @@ void bomb::Explode()
   {
     // создаем взрыв
     bang* bng = new bang(toX * 8, -3, _z, _toDelete);
-    this->getParent(0)->addChild(bng);
+    getParent(0)->addChild(bng);
     // уничтожаем тайлы
     pr1 = destroyTilesAt(toX, bombZ - 1);
     pr2 = destroyTilesAt(toX, bombZ);
@@ -180,6 +184,7 @@ void bomb::Explode()
   destroyVehiclesAt(fromX * 8, toX * 8, _z - 8, _z + 8);
 
   // уничтожаем снаряд
-  this->removeUpdateCallback(_clb);
+  removeUpdateCallback(_clb);
   _toDelete->push_back(this);
+  dynamic_cast<motorcycle*>(_parentVehicle)->BombExploded();
 }

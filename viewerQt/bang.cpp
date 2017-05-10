@@ -24,12 +24,12 @@ bang::bang(int x, int y, int z, std::list<osg::Node*>* toDelete)
   _texture(new osg::Texture2D), _image(osgDB::readImageFile("./Resources/bang.png")),
   _toDelete(toDelete), _clb(new bangCallback)
 {
-  this->setDataVariance(osg::Object::DYNAMIC);
-  this->setUpdateCallback(_clb);
+  setDataVariance(osg::Object::DYNAMIC);
+  setUpdateCallback(_clb);
 
   osg::Matrix m;
   m.makeTranslate(x, y, z);
-  this->setMatrix(m);
+  setMatrix(m);
 
   _geom->setColorBinding(osg::Geometry::BIND_OVERALL);
   _color->push_back(osg::Vec4(1.f, 1.f, 1.f, 1.f));
@@ -64,7 +64,7 @@ bang::bang(int x, int y, int z, std::list<osg::Node*>* toDelete)
   state->setRenderingHint(osg::StateSet::TRANSPARENT_BIN);
 
   _geode->addDrawable(_geom.get());
-  this->addChild(_geode.get());
+  addChild(_geode.get());
 }
 
 // текстура взрыва изменяется со временем и в конечном счете он пропадает
@@ -97,6 +97,6 @@ void bang::AnimateBang()
   if (_roughTimer == temp * 3)
   {
     _toDelete->push_back(this);
-    this->removeUpdateCallback(_clb);
+    removeUpdateCallback(_clb);
   }
 }
