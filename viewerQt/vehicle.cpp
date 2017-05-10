@@ -21,14 +21,14 @@ vehicle::vehicle(int x, int z, int speed, type startType, int playerNum, int con
   _controlDevice(controlDevice), _player(playerNum), _x(x), _z(z), _ViewerWindow(ViewerWindow),
   _currentType(startType)
 {
-  // дополнительный MatrixTransform для поворота
+  // additional MatrixTransform for rotating a vehicle
   addChild(_rMt.get());
 }
 
-// просчет коллизий и движение
+// calculating collisions and moving
 void vehicle::Move()
 {
-  // вычисление точек коллизии в зависимости от направления танка
+  // calculating collision points depending on current vehicle direction
   osg::Vec2i vehicleCollizionPt1, vehicleCollizionPt2;
   osg::Vec2i tileCollizionPt1, tileCollizionPt2;
   switch (_goDir)
@@ -68,9 +68,9 @@ void vehicle::Move()
   }
 
   std::map<osg::Vec2i, blockType>::const_iterator a, b;
-  bool aGo = false, bGo = false, tStop = false;
+  bool aGo = false, bGo = false, vStop = false;
 
-  // определение коллизий с блоками
+  // checking collisions with tiles
   if ((a = _typeMap->find(tileCollizionPt1)) != _typeMap->end())
   {
     if ((*a).second == blockType::ICE)
@@ -96,24 +96,24 @@ void vehicle::Move()
   else
     bGo = true;
 
-  // если не было коллизий с блоками определяет коллизии с другими танками
+  // if there is no any collisions with tiles checking collisions with other vehicles
   if (aGo && bGo)
   {
-    // цикл по всем танкам
+    // cycle on all vehicles
     for (auto it = _vehicles->cbegin(); it != _vehicles->end(); ++it)
     {
       if ((*it).get() != this && (*it)->_enabled)
       {
         if (vehicleCollizionPt1[0] > (*it)->_x - 8 && vehicleCollizionPt1[0] < (*it)->_x + 8 &&
           vehicleCollizionPt1[1] > (*it)->_z - 8 && vehicleCollizionPt1[1] < (*it)->_z + 8)
-          tStop = true; // впереди танк
+          vStop = true; // vehicle ahead
         if (vehicleCollizionPt2[0] > (*it)->_x - 8 && vehicleCollizionPt2[0] < (*it)->_x + 8 &&
           vehicleCollizionPt2[1] > (*it)->_z - 8 && vehicleCollizionPt2[1] < (*it)->_z + 8)
-          tStop = true;
+          vStop = true;
       }
     }
-    // впереди чисто, двигаемся
-    if (!tStop)
+    // nothing ahead, moving
+    if (!vStop)
     {
       if (_goDir == direction::UP)
         _z += _speed;
@@ -128,18 +128,18 @@ void vehicle::Move()
 
   osg::Matrix mR;
 
-  if (_curDir != _goDir) // если танк поворачивает
+  if (_curDir != _goDir) // if vehicle is turning
   {
     switch (_goDir)
     {
     case(direction::UP) :
     {
-      // при повороте позиция танка слегка "исправляется" для легкого вхождения в повороты
+      // slightly correcting position of vehicle when turnung to simplify driving near tiles
       if (_x % 8 >= 4)
         _x = (_x / 8) * 8 + 8;
       else
         _x = (_x / 8) * 8;
-      // собственно поворот
+      // making rotation
       mR.makeRotate(0, osg::Vec3(0, -1, 0));
       _rMt->setMatrix(mR);
       break;
@@ -175,10 +175,10 @@ void vehicle::Move()
       break;
     }
     }
-    _curDir = _goDir; // новое текущее направление
+    _curDir = _goDir; // new current direction
   }
 
-  // перемещаем танк
+  // moving vehicle
   osg::Matrix mT;
   mT.makeTranslate(_x, 0, _z);
   setMatrix(mT);
@@ -194,8 +194,8 @@ void vehicle::Enable()
 
 void vehicle::Disable()
 {
-  removeUpdateCallback(_clb); // чтоб не мог двигаться
-  _clb = nullptr;
-  _shotDelayTimer->setRemainingTime(-1); // чтоб не мог стрелять
-  _enabled = false; // чтоб коллизии для него не расчитывались
+  removeUpdateCallback(_clb); // vehicle can not move
+  _clb = nullptr; // deleting callback
+  _shotDelayTimer->setRemainingTime(-1); // can not fire
+  _enabled = false;
 }

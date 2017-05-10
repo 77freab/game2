@@ -9,7 +9,7 @@
 
 osg::ref_ptr<osg::Geode> mapBuilder::makeNewTile(blockType bt, bool pr)
 {
-  // цвет
+  // color
   osg::ref_ptr<osg::Vec4Array> color = new osg::Vec4Array;
 
   color->push_back(osg::Vec4(1.f, 1.f, 1.f, 1.f));
@@ -19,9 +19,10 @@ osg::ref_ptr<osg::Geode> mapBuilder::makeNewTile(blockType bt, bool pr)
   osg::ref_ptr<osg::Vec3Array> normals = new osg::Vec3Array;
   osg::ref_ptr<osg::Vec2Array> texCoord = new osg::Vec2Array;
 
+  // if tile is flat (water, ice)
   if (pr)
   {
-    // вершины
+    // vertices
     geom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::QUADS, 0, 4));
 
     vertices->push_back(osg::Vec3(0, 0, 0)); // 1
@@ -29,11 +30,11 @@ osg::ref_ptr<osg::Geode> mapBuilder::makeNewTile(blockType bt, bool pr)
     vertices->push_back(osg::Vec3(8, 0, 8)); // 3
     vertices->push_back(osg::Vec3(0, 0, 8)); // 4
 
-    // нормали
+    // normals
     normals->setBinding(osg::Array::BIND_OVERALL);
     normals->push_back(osg::Vec3(0, -1, 0));
 
-    // координаты текстуры
+    // texture coordinates
     texCoord->setBinding(osg::Array::BIND_PER_VERTEX);
 
     texCoord->push_back(osg::Vec2(0, 0));
@@ -41,9 +42,10 @@ osg::ref_ptr<osg::Geode> mapBuilder::makeNewTile(blockType bt, bool pr)
     texCoord->push_back(osg::Vec2(1, 1));
     texCoord->push_back(osg::Vec2(0, 1));
   }
+  // if tile is volumetric
   else
   {
-    // вершины
+    // vertices
     geom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::QUADS, 0, 4));
     geom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::QUADS, 4, 4));
     geom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::QUADS, 8, 4));
@@ -81,7 +83,7 @@ osg::ref_ptr<osg::Geode> mapBuilder::makeNewTile(blockType bt, bool pr)
     vertices->push_back(osg::Vec3(8,  0, 8)); // 23
     vertices->push_back(osg::Vec3(0,  0, 8)); // 24
 
-    // нормали
+    // normals
     normals->setBinding(osg::Array::BIND_PER_PRIMITIVE_SET);
 
     normals->push_back(osg::Vec3( 0,  0, -1)); // 1
@@ -91,7 +93,7 @@ osg::ref_ptr<osg::Geode> mapBuilder::makeNewTile(blockType bt, bool pr)
     normals->push_back(osg::Vec3( 0, -1,  0)); // 5
     normals->push_back(osg::Vec3( 0,  1,  0)); // 6
 
-    // координаты текстуры
+    // texture coorditanes
     texCoord->setBinding(osg::Array::BIND_PER_PRIMITIVE_SET);
 
     for (int i = 0; i < 6; i++)
@@ -103,14 +105,14 @@ osg::ref_ptr<osg::Geode> mapBuilder::makeNewTile(blockType bt, bool pr)
     }
   }
 
-  // геометрия
+  // geometry
   geom->setColorBinding(osg::Geometry::BIND_OVERALL);
   geom->setColorArray(color);
   geom->setVertexArray(vertices);
   geom->setNormalArray(normals);
   geom->setTexCoordArray(0, texCoord);
   
-  // установка текстуры
+  // setting texture
   osg::ref_ptr<osg::Image> image = osgDB::readImageFile(_blockTex[static_cast<int>(bt)]);
   osg::ref_ptr<osg::Texture2D> texture = new osg::Texture2D(image);
   //texture->setUnRefImageDataAfterApply(true);
@@ -192,7 +194,7 @@ int mapBuilder::CreateMap(osg::ref_ptr<osg::Group> scene,
   QXmlStreamReader reader;
   QFile file(fileName);
   if (!file.open(QIODevice::ReadOnly | QFile::Text))
-    return -1; // файл не открывается
+    return -1; // file can not be opened
   reader.setDevice(&file);
   reader.readNext();
   while (!reader.atEnd())
@@ -203,7 +205,7 @@ int mapBuilder::CreateMap(osg::ref_ptr<osg::Group> scene,
       bool a = false;
       if (reader.name() == "map")
       {
-        // читаем карту
+        // reading map
         typeMap.clear();
         tileMap.clear();
         reader.readNext();
@@ -290,7 +292,7 @@ int mapBuilder::CreateMap(osg::ref_ptr<osg::Group> scene,
       }
       else
       {
-        return -2; // в файле нет мапы
+        return -2; // there is no map in file
       }
     }
     else

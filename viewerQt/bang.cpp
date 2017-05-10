@@ -17,7 +17,7 @@ void bangCallback::operator()(osg::Node* nd, osg::NodeVisitor* ndv)
   traverse(nd, ndv);
 }
 
-// конструктор
+// constructor
 bang::bang(int x, int y, int z, std::list<osg::Node*>* toDelete)
   : _geode(new osg::Geode), _normals(new osg::Vec3Array), _geom(new osg::Geometry),
   _vertices(new osg::Vec3Array), _color(new osg::Vec4Array), _texCoord(new osg::Vec2Array),
@@ -67,7 +67,7 @@ bang::bang(int x, int y, int z, std::list<osg::Node*>* toDelete)
   addChild(_geode.get());
 }
 
-// текстура взрыва изменяется со временем и в конечном счете он пропадает
+// texture of explosion changing with time and complitely dissapeare at the end
 void bang::AnimateBang()
 {
   int temp = 10;

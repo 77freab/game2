@@ -20,7 +20,7 @@
 
 class keyboardEventHandler;
 
-// кастомное событие для увеличения счетчика убийств
+// custom event for updating killcount
 class vehicleKilledSomebody : public QEvent
 {
 public:
@@ -32,7 +32,7 @@ private:
   int _player;
 };
 
-// кастомное событие о необходимости возрождения танка
+// custom event for player respawn
 class vehicleNeedRespawn : public QEvent
 {
 public:
@@ -42,7 +42,7 @@ private:
   osg::ref_ptr<vehicle> _vehicle;
 };
 
-// главное окно
+// main window
 class ViewerWidget : public QWidget
 {
 public:
@@ -64,8 +64,8 @@ private:
 
   QTimer _viewerUpdateTimer;
   osgQt::GLWidget* _viewerWidget;
-  QHBoxLayout* _hLayout; // размещает вьювер + панель управления
-  QVBoxLayout* _vLayout; // размещает компоненты панели управления
+  QHBoxLayout* _hLayout; // holding viewer + gui
+  QVBoxLayout* _vLayout; // holding components of gui
   QTreeWidget* _playersList;
   QPushButton* _restartBtn;
   QPushButton* _addPlayerBtn;
@@ -74,18 +74,18 @@ private:
 
   osg::ref_ptr<osg::Node> _scene;
   osg::ref_ptr<osgViewer::Viewer> _viewer;
-  osg::Vec2i _mapSize; // размер карты в тайлах
-  QString _fileName; // строка для имени файла с картой
+  osg::Vec2i _mapSize; // map size in tiles
+  QString _fileName; // string for map file name
   mapBuilder mapMaker;
 
-  int _numJoysticks; // кол-во подключенных джойстиков
-  int _playerNum = 0; // текущее кол-во игроков
+  int _numJoysticks; // number of connected joystics
+  int _playerNum = 0; // current players number
   SDL_Joystick* _joy;
-  direction _up, _down, _left, _right; // направления движения зависящие от положения камеры
+  direction _up, _down, _left, _right; // direction for vehicles depending on camera positon
   keyboardEventHandler* _keyboardEventHandler;
 
-  std::vector<osg::ref_ptr<vehicle>> _vehicles; // вектор содержащий все танки
-  std::list<osg::Node*> _toDelete; // очередь на удаление
-  std::map<osg::Vec2i, blockType> _typeMap; // список координат и типов тайлов расположенных по эти координатам
-  std::map<osg::Vec2i, osg::ref_ptr<osg::MatrixTransform>> _tileMap; // список координат и ссылок на сами тайлы расположенные по этим координатам
+  std::vector<osg::ref_ptr<vehicle>> _vehicles; // vector containing all vihecles
+  std::list<osg::Node*> _toDelete; // queue for deleting osg referensed objects
+  std::map<osg::Vec2i, blockType> _typeMap; // list of coordinates and types of tiles located on these coordinates
+  std::map<osg::Vec2i, osg::ref_ptr<osg::MatrixTransform>> _tileMap; // list of coordinates and pointers to tiles located on these coordinates
 };

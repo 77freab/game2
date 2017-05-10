@@ -6,7 +6,7 @@
 
 #include "mapBuilder.h"
 
-const int SHOT_TIMEOUT = 300; // задержка между выстрелами в мс
+const int SHOT_TIMEOUT = 300; // delay between shots in ms
 const int COLORED_TEXTURES_NUM = 11;
 
 enum class direction

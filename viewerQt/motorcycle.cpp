@@ -14,19 +14,19 @@ motorcycle::motorcycle(int x, int z, int playerNum, int controlDevice,
 {
   setDataVariance(osg::Object::DYNAMIC);
 
-  // перемещаем в точку спавна
+  // move motorcycle to spawn place
   osg::Matrix m;
   m.makeTranslate(GetXCoord(), 0, GetZCoord());
-  setMatrix(m); // наследуетс€ от MatrixTransform дл€ перемещени€
+  setMatrix(m); // inherited from MatrixTransform for transition
 
-  // читаем модельку
+  // reading model
   osg::ref_ptr<osg::Node> model = osgDB::readNodeFile
     ("./Resources/motoTank/Scooter.3ds.15.scale.90,0,0.rot");
-  // читаем текстуру
+  // reading texture
   osg::ref_ptr<osg::Image> image = osgDB::readImageFile
     ("./Resources/motoTank/" + std::to_string(GetPlayerNum() % COLORED_TEXTURES_NUM) + ".bmp");
 
-  // устанавливаем текстуру
+  // setting the texture
   osg::StateSet* state = model->getOrCreateStateSet();
   osg::ref_ptr<osg::Texture2D> texture = new osg::Texture2D;
   texture->setImage(image.get());
@@ -35,10 +35,10 @@ motorcycle::motorcycle(int x, int z, int playerNum, int controlDevice,
   getRotateMT()->addChild(model.get());
 }
 
-// стрельба
+// shooting
 void motorcycle::Shoot()
 {
-  // обеспечиваем задержку при стрельбе
+  // checking for delay in shooting
   if (getShotDelayTimer()->hasExpired() && _numBombs < MAX_NUM_BOMBS)
   {
     _numBombs++;
@@ -46,7 +46,7 @@ void motorcycle::Shoot()
       this, _vehicles, _typeMap, _tileMap, _toDelete, _ViewerWindow);
     getParent(0)->addChild(droppedBomb.get());
     droppedBomb->setName(getName() + " - bomb");
-    // обновл€ем таймер
+    // updating the delay timer
     getShotDelayTimer()->setRemainingTime(SHOT_TIMEOUT);
   }
 }

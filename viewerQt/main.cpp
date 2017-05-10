@@ -17,7 +17,7 @@ const int SIDE_PANEL_SIZE = 415;
 const QEvent::Type VEHICLE_KILLED_SOMEBODY_EVENT = static_cast<QEvent::Type>(QEvent::User + 1);
 const QEvent::Type VEHICLE_NEED_RESPAWN_EVENT = static_cast<QEvent::Type>(QEvent::User + 2);
 
-// кастомное событие для увеличения счетчика убийств
+// custom event for updating killcount
 vehicleKilledSomebody::vehicleKilledSomebody(const int player, const int killCount)
   : QEvent(VEHICLE_KILLED_SOMEBODY_EVENT), _killCount(killCount), _player(player)
 {  }
@@ -33,7 +33,7 @@ int vehicleKilledSomebody::GetPlayer() const
 }
 // end
 
-// кастомное событие о необходимости возрождения танка
+// custom event for player respawn
 vehicleNeedRespawn::vehicleNeedRespawn(const osg::ref_ptr<vehicle> vehicle)
   : QEvent(VEHICLE_NEED_RESPAWN_EVENT), _vehicle(vehicle)
 {  }
@@ -44,7 +44,6 @@ osg::ref_ptr<vehicle> vehicleNeedRespawn::GetVehicle() const
 }
 // end
 
-// обработчик клавиатуры
 class keyboardEventHandler : public osgGA::GUIEventHandler
 {
 public:
@@ -94,7 +93,7 @@ public:
           break;
         }
       }
-      ////////////////////////////////////////////////////////////
+      /////////////////same for arrows/////////////////////
       if (_arrowsVehicle != nullptr)
         switch (ea.getKey())
       {
@@ -142,7 +141,7 @@ public:
         case(100) : // D
         {
           _pressedKeys[key] = false;
-          // если это была единственная нажатая клавиша то танк останавливается
+          // if there is at least one key held then vehicle move to that direction
           if (_pressedKeys[119])
             _wasdVehicle->SetMovingDirection(_up);
           else if (_pressedKeys[115])
@@ -156,6 +155,7 @@ public:
           break;
         }
       }
+      // same for arrows
       if (_arrowsVehicle != nullptr)
         switch (key)
       {
@@ -165,7 +165,6 @@ public:
         case(65363) : // right
         {
           _pressedKeys[key] = false;
-          // если это была единственная нажатая клавиша то танк останавливается
           if (_pressedKeys[65362])
             _arrowsVehicle->SetMovingDirection(_up);
           else if (_pressedKeys[65364])
@@ -201,13 +200,13 @@ public:
     _right = right;
   }
 private:
-  vehicle* _wasdVehicle = nullptr; // ссылка на танк управляемый WASD
-  vehicle* _arrowsVehicle = nullptr; // ссылка на танк управляемый стрелками
-  std::map<int, bool> _pressedKeys; // определяет зажаты ли клавиши клавиатуры в текущий момент
-  direction _up, _down, _left, _right; // направления движения зависящие от положения камеры
+  vehicle* _wasdVehicle = nullptr; // pointer to vehicle controlled by WASD
+  vehicle* _arrowsVehicle = nullptr; // pointer to vehicle controlled by arrows
+  std::map<int, bool> _pressedKeys; // determine if there are held keyboard keys in current moment
+  direction _up, _down, _left, _right; // direction for vehicles depending on camera positon
 };
 
-// главное окно - конструктор
+// main window - constructor
 ViewerWidget::ViewerWidget(QWidget* parent, Qt::WindowFlags f,
   osgViewer::ViewerBase::ThreadingModel threadingModel)
   : QWidget(parent, f), _viewer(new osgViewer::Viewer), _keyboardEventHandler(new keyboardEventHandler)
@@ -291,7 +290,7 @@ ViewerWidget::ViewerWidget(QWidget* parent, Qt::WindowFlags f,
   _viewerUpdateTimer.start(10);
 }
 
-// загрузка карты
+// map loading
 void ViewerWidget::loadMap()
 {
   _fileName = QFileDialog::getOpenFileName(this, "Open map","./Resources/maps","XML files (*.xml)");
@@ -299,8 +298,8 @@ void ViewerWidget::loadMap()
     restart();
 }
 
-// принимает номер устройства управления, 
-// возвращает строку с названием этого устройства управления
+// accept number of control device, 
+// return string with the name of this control device
 QString ViewerWidget::controlsName(int controlDevice)
 {
   if (controlDevice == -2)
@@ -311,7 +310,7 @@ QString ViewerWidget::controlsName(int controlDevice)
     return QString("Joystick " + QString::number(controlDevice));
 }
 
-// изменяет тип управления у конкретного игрока
+// changing control type for specific player
 void ViewerWidget::changeControls(int player, int controlDevice)
 {
   // controlDevice = -2 is WASD + Space
@@ -344,15 +343,15 @@ void ViewerWidget::changeControls(int player, int controlDevice)
     _keyboardEventHandler->SetArrowsVehicle(_vehicles[player]);
 }
 
-// вызывается по нажатию кнопки "добавить игрока"
+// called when user press "add player" button
 void ViewerWidget::addPlayer()
 {
-  // нельзя добавить игроков больше чем методов ввода (в т.ч. с клавиатуры)
+  // max number of players cannot be greater then number of control devices (including keyboard)
   if (_playerNum - 2 < _numJoysticks)
   {
     int player = _playerNum;
 
-    // ищем незанятый способ управленя танком
+    // looking for unoccupied control device
     for (int freeControl = -2; freeControl < _numJoysticks; freeControl++)
     {
       bool pr = true;
@@ -376,11 +375,11 @@ void ViewerWidget::addPlayer()
     item->setIcon(0, QIcon("./Resources/heavyTank/" + QString::number(_playerNum % COLORED_TEXTURES_NUM) + ".bmp"));
     item->setText(1, QString::fromLocal8Bit("0"));
 
-    // тип танка
+    // button showing list of vehicle types
     QPushButton* vehicleTypeBtn = new QPushButton(QString::fromLocal8Bit("Легкий"));
     QMenu* vehicleTypeMenu = new QMenu;
 
-    // кнопка смены типа танка на легкий
+    // button for type changing to light tank
     QAction* act = new QAction;
     connect(act, &QAction::triggered, vehicleTypeBtn, [vehicleTypeBtn, act] { vehicleTypeBtn->setText(act->text()); });
     connect(act, &QAction::triggered, this, [this, player] 
@@ -407,7 +406,7 @@ void ViewerWidget::addPlayer()
     act->setText(QString::fromLocal8Bit("Легкий"));
     vehicleTypeMenu->addAction(act);
 
-    // кнопка смены типа танка на тяжелый
+    // button for type changing to heavy tank
     act = new QAction;
     connect(act, &QAction::triggered, vehicleTypeBtn, [vehicleTypeBtn, act] { vehicleTypeBtn->setText(act->text()); });
     connect(act, &QAction::triggered, this, [this, player] 
@@ -434,7 +433,7 @@ void ViewerWidget::addPlayer()
     act->setText(QString::fromLocal8Bit("Тяжелый"));
     vehicleTypeMenu->addAction(act);
 
-    // кнопка смены типа танка на мотоцикл
+    // button for type changing to motorcycle
     act = new QAction;
     connect(act, &QAction::triggered, vehicleTypeBtn, [vehicleTypeBtn, act] { vehicleTypeBtn->setText(act->text()); });
     connect(act, &QAction::triggered, this, [this, player]
@@ -464,9 +463,9 @@ void ViewerWidget::addPlayer()
     vehicleTypeBtn->setMenu(vehicleTypeMenu);
     _playersList->setItemWidget(item, 2, vehicleTypeBtn);
 
-    // управление
+    // button showing list of control devices
     QPushButton* controlsBtn = new QPushButton(controlsName(_vehicles.back()->GetControlDevice()));
-    // по умолчанию танки 0 и 1 управляются с WASD и стрелок соответственно
+    // by default vehicles 0 and 1 controlled by WASD and arrows respectively
     if (_vehicles.back()->GetControlDevice() == -2)
       _keyboardEventHandler->SetWasdVehicle(_vehicles.back());
     if (_vehicles.back()->GetControlDevice() == -1)
@@ -474,21 +473,21 @@ void ViewerWidget::addPlayer()
 
     QMenu* controlsMenu = new QMenu;
 
-    // кнопка смены управления на WASD
+    // button for control device changing to WASD
     act = new QAction;
     connect(act, &QAction::triggered, controlsBtn, [controlsBtn, act] { controlsBtn->setText(act->text()); });
     connect(act, &QAction::triggered, this, [this, player] { changeControls(player, -2); });
     act->setText(QString::fromLocal8Bit("WASD + Space"));
     controlsMenu->addAction(act);
 
-    // кнопка смены управления на стрелки
+    // button for control device changing to arrows
     act = new QAction;
     connect(act, &QAction::triggered, controlsBtn, [controlsBtn, act] { controlsBtn->setText(act->text()); });
     connect(act, &QAction::triggered, this, [this, player] { changeControls(player, -1); });
     act->setText(QString::fromLocal8Bit("Arrows + Num 0"));
     controlsMenu->addAction(act);
 
-    // кнопки смены управления на любой из джойстиков
+    // button for control device changing to any of joystics
     for (int i = 0; i < _numJoysticks; i++)
     {
       act = new QAction;
@@ -504,11 +503,11 @@ void ViewerWidget::addPlayer()
     QPushButton* spawnBtn = new QPushButton("GO");
     _playersList->setItemWidget(item, 4, spawnBtn);
 
-    // заспавнить по нажатию кнопки
+    // player will be spawned by button press
     connect(spawnBtn, &QPushButton::clicked, this, [this, player] 
       { 
         spawnPlayer(_vehicles[player]);
-        // делаем кнопку спавна неактивной
+        // after spawn button become deactivated
         _playersList->itemWidget(_playersList->topLevelItem(player), 4)->setEnabled(false); 
       });
 
@@ -521,7 +520,7 @@ void ViewerWidget::addPlayer()
   }
 }
 
-// убирает блоки на месте спавна танка если таковые имеются
+// remove tiles on vehicle spawn point if there are any
 void ViewerWidget::clearPlaceForVehicle(int x, int z)
 {
   std::map<osg::Vec2i, blockType>::const_iterator a;
@@ -547,7 +546,7 @@ void ViewerWidget::clearPlaceForVehicle(int x, int z)
   }
 }
 
-// помещает танк на игровое поле
+// place vehicle on game area
 void ViewerWidget::spawnPlayer(osg::ref_ptr<vehicle> vehicle)
 {
   int x = rand() % (_mapSize[0] - 8) + 3;
@@ -556,23 +555,24 @@ void ViewerWidget::spawnPlayer(osg::ref_ptr<vehicle> vehicle)
   vehicle->SetXCoord(x * 8);
   vehicle->SetZCoord(z * 8);
 
-  // расчищаем место дял спавна
+  // clean spawn point
   clearPlaceForVehicle(x, z);
 
-  // перемещаем в точку спавна
+  // moving vehicle to spawn point
   osg::Matrix m;
   m.makeTranslate(x * 8, 0, z * 8);
   vehicle->setMatrix(m);
 
+  // if vehicle not on the scene already
   if (!_scene->asGroup()->containsNode(vehicle))
   {
-    // добавляем на сцену а активируем
+    // adding and activating it
     _scene->asGroup()->addChild(vehicle.get());
     vehicle->Enable();
   }
 }
 
-// перезапуск
+// game restart
 void ViewerWidget::restart()
 {
   while (!_toDelete.empty())
@@ -581,16 +581,14 @@ void ViewerWidget::restart()
     _toDelete.pop_front();
   }
 
-  //_playerNum = 0; // смешной баг с ускорением
-
   osg::ref_ptr<osg::Node> temp;
   if ((temp = createScene()) != nullptr)
   {
-    // отключаем все танки
+    // disabling all vehicles
     for (auto it = _vehicles.cbegin(); it != _vehicles.cend(); it++)
       (*it)->Disable();
 
-    // делаем кнопку спавна опять активной и обнуляем счетчик убийств
+    // making spawn button active and reseting kill counter
     for (int i = 0; i < _playersList->topLevelItemCount(); i++)
     {
       QTreeWidgetItem* tempItem = _playersList->topLevelItem(i);
@@ -604,7 +602,7 @@ void ViewerWidget::restart()
   }
 }
 
-// создание сцены
+// scene creating
 osg::ref_ptr<osg::Node> ViewerWidget::createScene()
 {
   osg::ref_ptr<osg::Group> scene = new osg::Group;
@@ -629,19 +627,17 @@ osg::ref_ptr<osg::Node> ViewerWidget::createScene()
     osgUtil::Optimizer::FLATTEN_STATIC_TRANSFORMS_DUPLICATING_SHARED_SUBGRAPHS |
     osgUtil::Optimizer::SPATIALIZE_GROUPS |
     osgUtil::Optimizer::COPY_SHARED_NODES |
-    //osgUtil::Optimizer::TRISTRIP_GEOMETRY | // разделяет на triangle strips
     osgUtil::Optimizer::TESSELLATE_GEOMETRY |
     osgUtil::Optimizer::MERGE_GEODES |
     osgUtil::Optimizer::FLATTEN_BILLBOARDS |
-    //osgUtil::Optimizer::TEXTURE_ATLAS_BUILDER | // текстуры танков артефачат
-    //osgUtil::Optimizer::INDEX_MESH | // разделяет на triangles
+    osgUtil::Optimizer::TEXTURE_ATLAS_BUILDER |
     osgUtil::Optimizer::VERTEX_POSTTRANSFORM |
     osgUtil::Optimizer::VERTEX_PRETRANSFORM
     );
   return scene.get();
 }
 
-// создает виджет с вьювером
+// making viewer widget
 osgQt::GLWidget* ViewerWidget::addViewWidget(osgQt::GraphicsWindowQt* gw, osg::Node* scene)
 {
   osg::Camera* camera = _viewer->getCamera();
@@ -651,18 +647,15 @@ osgQt::GLWidget* ViewerWidget::addViewWidget(osgQt::GraphicsWindowQt* gw, osg::N
 
   camera->setClearColor(osg::Vec4(0, 0, 0, 1));
   camera->setViewport(new osg::Viewport(0, 0, traits->width, traits->height));
-  //camera->setViewMatrixAsLookAt({ -100, -440, -100 }, { 128, 0, 112 }, { 1, 1, 1 });
-  //camera->setProjectionMatrixAsPerspective(28.0f, 32./28, 1.0f, 10000.0f);
 
   _viewer->setSceneData(scene);
-  //_viewer->addEventHandler(new osgViewer::StatsHandler); // ФПС и прочее
+  //_viewer->addEventHandler(new osgViewer::StatsHandler); // FPS and stats
   _viewer->addEventHandler(_keyboardEventHandler);
   _viewer->setCameraManipulator(new osgGA::TrackballManipulator);
   gw->setTouchEventsEnabled(true);
   return gw->getGLWidget();
 }
 
-// задает аттрибуты виджета с вьювером
 osgQt::GraphicsWindowQt* ViewerWidget::createGraphicsWindow(int x, int y, int w, int h)
 {
   osg::DisplaySettings* ds = osg::DisplaySettings::instance().get();
@@ -680,7 +673,7 @@ osgQt::GraphicsWindowQt* ViewerWidget::createGraphicsWindow(int x, int y, int w,
   return new osgQt::GraphicsWindowQt(traits.get());
 }
 
-// тест подключенных джойстиков
+// testing connected joystics
 void ViewerWidget::testSDLJoystick()
 {
   // Initialize the joystick subsystem
@@ -707,7 +700,7 @@ void ViewerWidget::testSDLJoystick()
     _console->insertPlainText(QString::fromLocal8Bit("Не найден ни один джойстик\n"));
 }
 
-// обработка событий
+// event handling
 bool ViewerWidget::event(QEvent* event)
 {
   if (event->type() == QEvent::Paint)
@@ -722,23 +715,15 @@ bool ViewerWidget::event(QEvent* event)
 
     int hAxis, vAxis;
     bool startBtn, fireBtn;
-    // центр карты
-    //int centerX = _mapSize[0] * 4;
-    //int centerZ = _mapSize[1] * 4;
-    // расположение камеры в пространстве по осям x и z
-    //int camX = _viewer->getCamera()->getViewMatrix()(3, 2) + centerX; // 3 строка 0 столбец
-    //int camZ = _viewer->getCamera()->getViewMatrix()(3, 0) + centerZ;
     int camX = _viewer->getCamera()->getViewMatrix()(3, 0);
     int camZ = _viewer->getCamera()->getViewMatrix()(3, 1);
 
-    //if (camX >= camZ && camX < -camZ)
     if (camZ < 0)
     {
 
-      //if (camZ < centerZ)
       if (camX < 0)
       {
-        // камера снизу
+        // camera from below of game area
         _up = direction::UP;
         _down = direction::DOWN;
         _left = direction::LEFT;
@@ -746,7 +731,7 @@ bool ViewerWidget::event(QEvent* event)
       }
       else
       {
-        // камера слева
+        // camera to the left from game area
         _up = direction::RIGHT;
         _down = direction::LEFT;
         _left = direction::UP;
@@ -755,10 +740,9 @@ bool ViewerWidget::event(QEvent* event)
     }
     else
     {
-      //if (camX < centerX)
       if (camX > 0)
       {
-        // камера сверху
+        // camera from above of game area
         _up = direction::DOWN;
         _down = direction::UP;
         _left = direction::RIGHT;
@@ -766,7 +750,7 @@ bool ViewerWidget::event(QEvent* event)
       }
       else
       {
-        // камера справа
+        // camera to the right from game area
         _up = direction::LEFT;
         _down = direction::RIGHT;
         _left = direction::DOWN;
@@ -778,7 +762,7 @@ bool ViewerWidget::event(QEvent* event)
 
     for (auto it = _vehicles.cbegin(); it != _vehicles.end(); ++it)
     {
-      // управление с клавиатуры обрабатывается не здесь
+      // keyboard control devices handled in "keyboardEventHandler" class
       if ((*it)->GetControlDevice() < 0)
         continue;
 
@@ -788,8 +772,8 @@ bool ViewerWidget::event(QEvent* event)
 
       SDL_JoystickUpdate();
 
-      hAxis = SDL_JoystickGetAxis(_joy, 0); // вертикальная ось - первая
-      vAxis = SDL_JoystickGetAxis(_joy, SDL_JoystickNumAxes(_joy) - 1); // горизонтальная ось - последняя
+      hAxis = SDL_JoystickGetAxis(_joy, 0); // vertical axis is the first one (on joystics i use)
+      vAxis = SDL_JoystickGetAxis(_joy, SDL_JoystickNumAxes(_joy) - 1); // horizontal axis is the last one
       startBtn = SDL_JoystickGetButton(_joy, 9);
       fireBtn = SDL_JoystickGetButton(_joy, 2);
 
@@ -812,7 +796,7 @@ bool ViewerWidget::event(QEvent* event)
   }
   else if (event->type() == VEHICLE_KILLED_SOMEBODY_EVENT)
   {
-    // обновляем счетчик убийств
+    // updating killcount
     vehicleKilledSomebody* ev = static_cast<vehicleKilledSomebody *>(event);
     _playersList->topLevelItem(ev->GetPlayer())->setText(1,
       QString::number(ev->GetKillCount()));
@@ -820,7 +804,7 @@ bool ViewerWidget::event(QEvent* event)
   }
   else if (event->type() == VEHICLE_NEED_RESPAWN_EVENT)
   {
-    // спавним уничтоженный танк
+    // spawning destroyed vehicle
     spawnPlayer(static_cast<vehicleNeedRespawn *>(event)->GetVehicle());
     return true;
   }

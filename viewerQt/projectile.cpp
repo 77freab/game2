@@ -24,7 +24,7 @@ void projectileCallback::operator()(osg::Node* nd, osg::NodeVisitor* ndv)
   traverse(nd, ndv);
 }
 
-// конструктор
+// construcor
 projectile::projectile(int x, int y, int z, int speed, direction dir, vehicle* parentVehicle,
   std::vector<osg::ref_ptr<vehicle>>* vehicles, std::map<osg::Vec2i, blockType>* typeMap,
   std::map<osg::Vec2i, osg::ref_ptr<osg::MatrixTransform>>* tileMap,
@@ -36,12 +36,12 @@ projectile::projectile(int x, int y, int z, int speed, direction dir, vehicle* p
   setDataVariance(osg::Object::DYNAMIC);
   setUpdateCallback(_clb);
 
-  // перемещаем в точку спавна
+  // move projectile to spawn place
   osg::Matrix m;
   m.makeTranslate(_x, _y, _z);
-  setMatrix(m); // наследуется от MatrixTransform для перемещения
+  setMatrix(m); // inherited from MatrixTransform for transition
   
-  // читаем текстуру
+  // reading texture
   osg::ref_ptr<osg::Image> textureImage = osgDB::readImageFile
     ("./Resources/projectile/Bullet_U.bmp");
   osg::ref_ptr<osg::Node> model;
@@ -50,11 +50,13 @@ projectile::projectile(int x, int y, int z, int speed, direction dir, vehicle* p
   {
     case(direction::UP) :
     {
-      // поворачиваем модельку под необходимое направление
+      // rotating the model to appropriate direction
       model = osgDB::readNodeFile
         ("./Resources/projectile/Bullet.3ds.-90,0,0.rot.4,-4,4.trans");
+      // calculating initial values for collision points
       _tileCollizionPt1 = { (_x + 2) / 8, (_z + 8) / 8 };
       _tileCollizionPt2 = { (_x + 6) / 8, (_z + 8) / 8 };
+      // creating function that called in the callback to move the projectile
       moving = [this]
       {
         _z += _speed;
@@ -65,9 +67,9 @@ projectile::projectile(int x, int y, int z, int speed, direction dir, vehicle* p
       };
       break;
     }
+    // same for each direction
     case(direction::DOWN) :
     {
-      // поворачиваем модельку под необходимое направление
       model = osgDB::readNodeFile
         ("./Resources/projectile/Bullet.3ds.90,0,0.rot.4,4,4.trans");
       _tileCollizionPt1 = { (_x + 2) / 8, (_z) / 8 };
@@ -84,7 +86,6 @@ projectile::projectile(int x, int y, int z, int speed, direction dir, vehicle* p
     }
     case(direction::LEFT) :
     {
-      // поворачиваем модельку под необходимое направление
       model = osgDB::readNodeFile
         ("./Resources/projectile/Bullet.3ds.0,0,-90.rot.4,0,0.trans");
       _tileCollizionPt1 = { (_x) / 8, (_z + 2) / 8 };
@@ -101,7 +102,6 @@ projectile::projectile(int x, int y, int z, int speed, direction dir, vehicle* p
     }
     case(direction::RIGHT) :
     {
-      // поворачиваем модельку под необходимое направление
       model = osgDB::readNodeFile
         ("./Resources/projectile/Bullet.3ds.0,0,90.rot.4,0,0.trans");
       _tileCollizionPt1 = { (_x + 8) / 8, (_z + 2) / 8 };
@@ -118,7 +118,7 @@ projectile::projectile(int x, int y, int z, int speed, direction dir, vehicle* p
     }
   }
 
-  // устанавливаем текстуру
+  // setting texture
   osg::StateSet* state = model->getOrCreateStateSet();
   osg::ref_ptr<osg::Texture2D> texture = new osg::Texture2D;
   texture->setImage(textureImage.get());
@@ -127,7 +127,7 @@ projectile::projectile(int x, int y, int z, int speed, direction dir, vehicle* p
   addChild(model.get());
 }
 
-// просчет коллизий
+// calculating collisions
 void projectile::TryToMove()
 {
   std::map<osg::Vec2i, blockType>::const_iterator a, b;
@@ -136,13 +136,15 @@ void projectile::TryToMove()
   if ((a = _typeMap->find(_tileCollizionPt1)) != _typeMap->end())
     if ((*a).second == blockType::BRICK)
     {
-      // уничтожаем блок
+      // destroying tile
       _toDelete->push_back((*_tileMap)[_tileCollizionPt1]);
       _typeMap->erase(a);
+      // need to destroy this projectile
       projDel = true;
     }
     else if (((*a).second == blockType::ARMOR) || ((*a).second == blockType::BORDER))
     {
+      // need to destroy this projectile
       projDel = true;
     }
     else
@@ -153,14 +155,15 @@ void projectile::TryToMove()
   if ((b = _typeMap->find(_tileCollizionPt2)) != _typeMap->end())
     if ((*b).second == blockType::BRICK)
     {
-      // уничтожаем блок
+      // destroying tile
       _toDelete->push_back((*_tileMap)[_tileCollizionPt2]);
       _typeMap->erase(b);
+      // need to destroy this projectile
       projDel = true;
     }
     else if (((*b).second == blockType::ARMOR) || ((*b).second == blockType::BORDER))
     {
-      // уничтожить снаряд
+      // need to destroy this projectile
       projDel = true;
     }
     else
@@ -179,25 +182,25 @@ void projectile::TryToMove()
 
             if (attackedEnemy->IsEnabled())
             {
-              // уничтожить снаряд
+              // need to destroy this projectile
               projDel = true;
-              // если попали в лоб тяжелому танку - нет пробития
+              // if we hit front armor of heavy tank projectile can't pierce it
               if (!(attackedEnemy->GetType() == vehicle::type::HEAVY &&
                 abs(static_cast<int>(attackedEnemy->GetCurDir()) - static_cast<int>(_dir)) == 2))
               {
-                // создаем взрыв
+                // creating explosion
                 bang* bng = new bang((*it)->GetXCoord(), 4, (*it)->GetZCoord(), _toDelete);
                 _parentVehicle->getParent(0)->addChild(bng);
 
-                // уничтожаем танк
-                attackedEnemy->Disable(); // отключаем его
-                _toDelete->push_back(attackedEnemy); // ставим в очередь на удаление со сцены
+                // destroying vehicle
+                attackedEnemy->Disable(); // disabe it
+                _toDelete->push_back(attackedEnemy); // puting it to the queue for deleting from scene
 
-                // увеличиваем число убийств
-                QApplication::postEvent(_ViewerWindow,
-                  new vehicleKilledSomebody(_parentVehicle->GetPlayerNum(), _parentVehicle->AddKill()));
+                // increase number of kills
+                QApplication::postEvent(_ViewerWindow, new vehicleKilledSomebody
+                  (_parentVehicle->GetPlayerNum(), _parentVehicle->AddKill()));
 
-                // через какое-то время противнек зареспавнится
+                // after pause enemy will respawn
                 ViewerWidget* vw = _ViewerWindow;
                 QTimer::singleShot(3000, vw, [attackedEnemy, vw]
                 {
@@ -210,7 +213,7 @@ void projectile::TryToMove()
 
   if (projDel)
   {
-    // уничтожаем снаряд
+    // destroying this projectile
     removeUpdateCallback(_clb);
     _toDelete->push_back(this);
   }
