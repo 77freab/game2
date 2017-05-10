@@ -373,7 +373,7 @@ void ViewerWidget::addPlayer()
 
     QTreeWidgetItem *item = new QTreeWidgetItem(_playersList);
 
-    item->setIcon(0, QIcon("./Resources/heavyTank/" + QString::number(_playerNum % 13) + ".bmp"));
+    item->setIcon(0, QIcon("./Resources/heavyTank/" + QString::number(_playerNum % COLORED_TEXTURES_NUM) + ".bmp"));
     item->setText(1, QString::fromLocal8Bit("0"));
 
     // тип танка

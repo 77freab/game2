@@ -24,7 +24,7 @@ lightTank::lightTank(int x, int z, int playerNum, int controlDevice,
     ("./Resources/lightTank/bradle.3ds.15.scale.90,90,0.rot");
   // читаем текстуру
   osg::ref_ptr<osg::Image> image = osgDB::readImageFile
-    ("./Resources/lightTank/" + std::to_string(GetPlayerNum() % 13) + ".png");
+    ("./Resources/lightTank/" + std::to_string(GetPlayerNum() % COLORED_TEXTURES_NUM) + ".png");
 
   // устанавливаем текстуру
   osg::StateSet* state = model->getOrCreateStateSet();

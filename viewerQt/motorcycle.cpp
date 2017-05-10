@@ -24,7 +24,7 @@ motorcycle::motorcycle(int x, int z, int playerNum, int controlDevice,
     ("./Resources/motoTank/Scooter.3ds.15.scale.90,0,0.rot");
   // читаем текстуру
   osg::ref_ptr<osg::Image> image = osgDB::readImageFile
-    ("./Resources/motoTank/" + std::to_string(GetPlayerNum() % 13) + ".bmp");
+    ("./Resources/motoTank/" + std::to_string(GetPlayerNum() % COLORED_TEXTURES_NUM) + ".bmp");
 
   // устанавливаем текстуру
   osg::StateSet* state = model->getOrCreateStateSet();

@@ -24,7 +24,7 @@ heavyTank::heavyTank(int x, int z, int playerNum, int controlDevice,
     ("./Resources/heavyTank/Leopard 2A4.3ds.5.scale.90,180,0.rot");
   // читаем текстуру
   osg::ref_ptr<osg::Image> image = osgDB::readImageFile
-    ("./Resources/heavyTank/" + std::to_string(GetPlayerNum() % 13) + ".bmp");
+    ("./Resources/heavyTank/" + std::to_string(GetPlayerNum() % COLORED_TEXTURES_NUM) + ".bmp");
   
   // устанавливаем текстуру
   osg::StateSet* state = model->getOrCreateStateSet();
