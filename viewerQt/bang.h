@@ -8,7 +8,7 @@ class bangCallback;
 class bang : public osg::MatrixTransform
 {
 public:
-  bang(int x, int y, int z, std::list<osg::Node*>* toDelete);
+  bang(int x, int y, int z, std::list<osg::Node*>& toDelete);
   void AnimateBang();
 private:
   osg::ref_ptr<osg::Geode> _geode;

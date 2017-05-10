@@ -5,11 +5,11 @@
 #include "projectile.h"
 
 lightTank::lightTank(int x, int z, int playerNum, int controlDevice,
-  std::vector<osg::ref_ptr<vehicle>>* vehicles,
-  std::map<osg::Vec2i, blockType>* typeMap,
-  std::map<osg::Vec2i, osg::ref_ptr<osg::MatrixTransform>>* tileMap,
-  std::list<osg::Node*>* toDelete,
-  ViewerWidget* ViewerWindow)
+  std::vector<osg::ref_ptr<vehicle>>& vehicles,
+  std::map<osg::Vec2i, blockType>& typeMap,
+  std::map<osg::Vec2i, osg::ref_ptr<osg::MatrixTransform>>& tileMap,
+  std::list<osg::Node*>& toDelete,
+  ViewerWidget& ViewerWindow)
   : vehicle(x, z, 2, type::LIGHT, playerNum, controlDevice, vehicles, typeMap, tileMap, toDelete, ViewerWindow)
 {
   setDataVariance(osg::Object::DYNAMIC);
@@ -42,7 +42,7 @@ void lightTank::Shoot()
   if (getShotDelayTimer()->hasExpired())
   {
     osg::ref_ptr<projectile> prj = new projectile(GetXCoord() - 4, -4, GetZCoord() - 4,
-      4, GetCurDir(), this, _vehicles, _typeMap, _tileMap, _toDelete, _ViewerWindow);
+      4, GetCurDir(), *this, *_vehicles, *_typeMap, *_tileMap, *_toDelete, *_ViewerWindow);
     getParent(0)->addChild(prj.get());
     prj->setName(getName() + " - projectile");
     // updating the delay timer

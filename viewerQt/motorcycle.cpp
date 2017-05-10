@@ -5,11 +5,11 @@
 #include "motorcycle.h"
 
 motorcycle::motorcycle(int x, int z, int playerNum, int controlDevice,
-  std::vector<osg::ref_ptr<vehicle>>* vehicles,
-  std::map<osg::Vec2i, blockType>* typeMap,
-  std::map<osg::Vec2i, osg::ref_ptr<osg::MatrixTransform>>* tileMap,
-  std::list<osg::Node*>* toDelete,
-  ViewerWidget* ViewerWindow)
+  std::vector<osg::ref_ptr<vehicle>>& vehicles,
+  std::map<osg::Vec2i, blockType>& typeMap,
+  std::map<osg::Vec2i, osg::ref_ptr<osg::MatrixTransform>>& tileMap,
+  std::list<osg::Node*>& toDelete,
+  ViewerWidget& ViewerWindow)
   : vehicle(x, z, 3, type::MOTO, playerNum, controlDevice, vehicles, typeMap, tileMap, toDelete, ViewerWindow)
 {
   setDataVariance(osg::Object::DYNAMIC);
@@ -43,7 +43,7 @@ void motorcycle::Shoot()
   {
     _numBombs++;
     osg::ref_ptr<bomb> droppedBomb = new bomb(GetXCoord(), -4, GetZCoord(), 
-      this, _vehicles, _typeMap, _tileMap, _toDelete, _ViewerWindow);
+      *this, *_vehicles, *_typeMap, *_tileMap, *_toDelete, *_ViewerWindow);
     getParent(0)->addChild(droppedBomb.get());
     droppedBomb->setName(getName() + " - bomb");
     // updating the delay timer

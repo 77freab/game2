@@ -18,11 +18,11 @@ void bangCallback::operator()(osg::Node* nd, osg::NodeVisitor* ndv)
 }
 
 // constructor
-bang::bang(int x, int y, int z, std::list<osg::Node*>* toDelete)
+bang::bang(int x, int y, int z, std::list<osg::Node*>& toDelete)
   : _geode(new osg::Geode), _normals(new osg::Vec3Array), _geom(new osg::Geometry),
   _vertices(new osg::Vec3Array), _color(new osg::Vec4Array), _texCoord(new osg::Vec2Array),
   _texture(new osg::Texture2D), _image(osgDB::readImageFile("./Resources/bang.png")),
-  _toDelete(toDelete), _clb(new bangCallback)
+  _toDelete(&toDelete), _clb(new bangCallback)
 {
   setDataVariance(osg::Object::DYNAMIC);
   setUpdateCallback(_clb);

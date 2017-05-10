@@ -30,14 +30,14 @@ void bombCallback::operator()(osg::Node* nd, osg::NodeVisitor* ndv)
 }
 
 // constructor
-bomb::bomb(int x, int y, int z, vehicle* parentVehicle,
-  std::vector<osg::ref_ptr<vehicle>>* vehicles, std::map<osg::Vec2i, blockType>* typeMap,
-  std::map<osg::Vec2i, osg::ref_ptr<osg::MatrixTransform>>* tileMap,
-  std::list<osg::Node*>* toDelete, ViewerWidget* ViewerWindow)
+bomb::bomb(int x, int y, int z, vehicle& parentVehicle,
+  std::vector<osg::ref_ptr<vehicle>>& vehicles, std::map<osg::Vec2i, blockType>& typeMap,
+  std::map<osg::Vec2i, osg::ref_ptr<osg::MatrixTransform>>& tileMap,
+  std::list<osg::Node*>& toDelete, ViewerWidget& ViewerWindow)
   //  : _x(qFloor(x / 16.) * 16 + 8), _y(y), _z(qFloor(z / 16.) * 16 + 8), 
   : _x(qFloor(x / 8.) * 8), _y(y), _z(qFloor(z / 8.) * 8),
-  _clb(new bombCallback), _vehicles(vehicles), _typeMap(typeMap), _tileMap(tileMap),
-  _toDelete(toDelete), _ViewerWindow(ViewerWindow), _parentVehicle(parentVehicle)
+  _clb(new bombCallback), _vehicles(&vehicles), _typeMap(&typeMap), _tileMap(&tileMap),
+  _toDelete(&toDelete), _ViewerWindow(&ViewerWindow), _parentVehicle(&parentVehicle)
 {
   setUpdateCallback(_clb);
 
@@ -97,7 +97,7 @@ void bomb::destroyVehiclesAt(int fromX, int toX, int fromZ, int toZ)
         if (attackedEnemy->IsEnabled())
         {
           // creating explosion
-          bang* bng = new bang((*it)->GetXCoord(), -4, (*it)->GetZCoord(), _toDelete);
+          bang* bng = new bang((*it)->GetXCoord(), -4, (*it)->GetZCoord(), *_toDelete);
           getParent(0)->addChild(bng);
 
           // destroing vehicle
@@ -134,7 +134,7 @@ void bomb::Explode()
   for (toZ = bombZ - 1; toZ < bombZ + 5; toZ++)
   {
     // creating explosion
-    bang* bng = new bang(_x, -3, toZ * 8, _toDelete);
+    bang* bng = new bang(_x, -3, toZ * 8, *_toDelete);
     getParent(0)->addChild(bng);
     // destroing tiles
     pr1 = destroyTilesAt(bombX - 1, toZ);
@@ -146,7 +146,7 @@ void bomb::Explode()
   for (fromZ = bombZ - 2; fromZ > bombZ - 6; fromZ--)
   {
     // creating explosion
-    bang* bng = new bang(_x, -3, fromZ * 8, _toDelete);
+    bang* bng = new bang(_x, -3, fromZ * 8, *_toDelete);
     getParent(0)->addChild(bng);
     // destroing tiles
     pr1 = destroyTilesAt(bombX - 1, fromZ);
@@ -160,7 +160,7 @@ void bomb::Explode()
   for (fromX = bombX - 2; fromX > bombX - 6; fromX--)
   {
     // creating explosion
-    bang* bng = new bang(fromX * 8, -3, _z, _toDelete);
+    bang* bng = new bang(fromX * 8, -3, _z, *_toDelete);
     getParent(0)->addChild(bng);
     // destroing tiles
     pr1 = destroyTilesAt(fromX, bombZ - 1);
@@ -172,7 +172,7 @@ void bomb::Explode()
   for (toX = bombX + 1; toX < bombX + 5; toX++)
   {
     // creating explosion
-    bang* bng = new bang(toX * 8, -3, _z, _toDelete);
+    bang* bng = new bang(toX * 8, -3, _z, *_toDelete);
     getParent(0)->addChild(bng);
     // destroing tiles
     pr1 = destroyTilesAt(toX, bombZ - 1);

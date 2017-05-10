@@ -11,14 +11,14 @@ void vehicleCallback::operator()(osg::Node* nd, osg::NodeVisitor* ndv)
 }
 
 vehicle::vehicle(int x, int z, int speed, type startType, int playerNum, int controlDevice,
-  std::vector<osg::ref_ptr<vehicle>>* vehicles, 
-  std::map<osg::Vec2i, blockType>* typeMap, 
-  std::map<osg::Vec2i, osg::ref_ptr<osg::MatrixTransform>>* tileMap, 
-  std::list<osg::Node*>* toDelete, 
-  ViewerWidget* ViewerWindow)
+  std::vector<osg::ref_ptr<vehicle>>& vehicles, 
+  std::map<osg::Vec2i, blockType>& typeMap, 
+  std::map<osg::Vec2i, osg::ref_ptr<osg::MatrixTransform>>& tileMap, 
+  std::list<osg::Node*>& toDelete, 
+  ViewerWidget& ViewerWindow)
   : _shotDelayTimer(new QDeadlineTimer(-1)), _rMt(new MatrixTransform), _speed(speed),
-  _typeMap(typeMap), _tileMap(tileMap), _toDelete(toDelete), _vehicles(vehicles),
-  _controlDevice(controlDevice), _player(playerNum), _x(x), _z(z), _ViewerWindow(ViewerWindow),
+  _typeMap(&typeMap), _tileMap(&tileMap), _toDelete(&toDelete), _vehicles(&vehicles),
+  _controlDevice(controlDevice), _player(playerNum), _x(x), _z(z), _ViewerWindow(&ViewerWindow),
   _currentType(startType)
 {
   // additional MatrixTransform for rotating a vehicle

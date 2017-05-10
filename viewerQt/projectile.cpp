@@ -25,13 +25,13 @@ void projectileCallback::operator()(osg::Node* nd, osg::NodeVisitor* ndv)
 }
 
 // construcor
-projectile::projectile(int x, int y, int z, int speed, direction dir, vehicle* parentVehicle,
-  std::vector<osg::ref_ptr<vehicle>>* vehicles, std::map<osg::Vec2i, blockType>* typeMap,
-  std::map<osg::Vec2i, osg::ref_ptr<osg::MatrixTransform>>* tileMap,
-  std::list<osg::Node*>* toDelete, ViewerWidget* ViewerWindow)
+projectile::projectile(int x, int y, int z, int speed, direction dir, vehicle& parentVehicle,
+  std::vector<osg::ref_ptr<vehicle>>& vehicles, std::map<osg::Vec2i, blockType>& typeMap,
+  std::map<osg::Vec2i, osg::ref_ptr<osg::MatrixTransform>>& tileMap,
+  std::list<osg::Node*>& toDelete, ViewerWidget& ViewerWindow)
   : _dir(dir), _x(x), _y(y), _z(z), _speed(speed), _clb(new projectileCallback),
-  _parentVehicle(parentVehicle), _vehicles(vehicles), _typeMap(typeMap), _tileMap(tileMap),
-  _toDelete(toDelete), _ViewerWindow(ViewerWindow)
+  _parentVehicle(&parentVehicle), _vehicles(&vehicles), _typeMap(&typeMap), _tileMap(&tileMap),
+  _toDelete(&toDelete), _ViewerWindow(&ViewerWindow)
 {
   setDataVariance(osg::Object::DYNAMIC);
   setUpdateCallback(_clb);
@@ -174,27 +174,26 @@ void projectile::TryToMove()
   if (!projDel)
     for (auto it = _vehicles->cbegin(); it != _vehicles->end(); ++it)
     {
-      if ((*it).get() != _parentVehicle && (*it)->IsEnabled())
-        if (_z + 6 >= (*it)->GetZCoord() - 8 && _z + 2 <= (*it)->GetZCoord() + 8)
-          if (_x + 6 >= (*it)->GetXCoord() - 8 && _x + 2 <= (*it)->GetXCoord() + 8) // есть попадание
+      osg::ref_ptr<vehicle> currentVehicle = *it;
+      if (currentVehicle.get() != _parentVehicle && currentVehicle->IsEnabled())
+        if (_z + 6 >= currentVehicle->GetZCoord() - 8 && _z + 2 <= currentVehicle->GetZCoord() + 8)
+          if (_x + 6 >= currentVehicle->GetXCoord() - 8 && _x + 2 <= currentVehicle->GetXCoord() + 8) // есть попадание
           {
-            osg::ref_ptr<vehicle> attackedEnemy = *it;
-
-            if (attackedEnemy->IsEnabled())
+            if (currentVehicle->IsEnabled())
             {
               // need to destroy this projectile
               projDel = true;
               // if we hit front armor of heavy tank projectile can't pierce it
-              if (!(attackedEnemy->GetType() == vehicle::type::HEAVY &&
-                abs(static_cast<int>(attackedEnemy->GetCurDir()) - static_cast<int>(_dir)) == 2))
+              if (!(currentVehicle->GetType() == vehicle::type::HEAVY &&
+                abs(static_cast<int>(currentVehicle->GetCurDir()) - static_cast<int>(_dir)) == 2))
               {
                 // creating explosion
-                bang* bng = new bang((*it)->GetXCoord(), 4, (*it)->GetZCoord(), _toDelete);
+                bang* bng = new bang(currentVehicle->GetXCoord(), 4, currentVehicle->GetZCoord(), *_toDelete);
                 _parentVehicle->getParent(0)->addChild(bng);
 
                 // destroying vehicle
-                attackedEnemy->Disable(); // disabe it
-                _toDelete->push_back(attackedEnemy); // puting it to the queue for deleting from scene
+                currentVehicle->Disable(); // disabe it
+                _toDelete->push_back(currentVehicle); // puting it to the queue for deleting from scene
 
                 // increase number of kills
                 QApplication::postEvent(_ViewerWindow, new vehicleKilledSomebody
@@ -202,9 +201,9 @@ void projectile::TryToMove()
 
                 // after pause enemy will respawn
                 ViewerWidget* vw = _ViewerWindow;
-                QTimer::singleShot(3000, vw, [attackedEnemy, vw]
+                QTimer::singleShot(3000, vw, [currentVehicle, vw]
                 {
-                  QApplication::postEvent(vw, new vehicleNeedRespawn(attackedEnemy.get()));
+                  QApplication::postEvent(vw, new vehicleNeedRespawn(currentVehicle.get()));
                 });
               }
             }

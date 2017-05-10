@@ -363,7 +363,7 @@ void ViewerWidget::addPlayer()
       if (pr)
       {
         _vehicles.push_back(new lightTank(0, 0, player, freeControl,
-          &_vehicles, &_typeMap, &_tileMap, &_toDelete, this));
+          _vehicles, _typeMap, _tileMap, _toDelete, *this));
         break;
       }
     }
@@ -393,7 +393,7 @@ void ViewerWidget::addPlayer()
           _vehicles[player]->getParent(0)->removeChild(_vehicles[player]);
 
         _vehicles[player] = new lightTank(0, 0, player, controlDevice,
-          &_vehicles, &_typeMap, &_tileMap, &_toDelete, this);
+          _vehicles, _typeMap, _tileMap, _toDelete, *this);
 
         if (controlDevice == -2)
           _keyboardEventHandler->SetWasdVehicle(_vehicles[player]);
@@ -420,7 +420,7 @@ void ViewerWidget::addPlayer()
           _vehicles[player]->getParent(0)->removeChild(_vehicles[player]);
 
         _vehicles[player] = new heavyTank(0, 0, player, controlDevice,
-          &_vehicles, &_typeMap, &_tileMap, &_toDelete, this);
+          _vehicles, _typeMap, _tileMap, _toDelete, *this);
 
         if (controlDevice == -2)
           _keyboardEventHandler->SetWasdVehicle(_vehicles[player]);
@@ -447,7 +447,7 @@ void ViewerWidget::addPlayer()
           _vehicles[player]->getParent(0)->removeChild(_vehicles[player]);
 
         _vehicles[player] = new motorcycle(0, 0, player, controlDevice,
-          &_vehicles, &_typeMap, &_tileMap, &_toDelete, this);
+          _vehicles, _typeMap, _tileMap, _toDelete, *this);
 
         if (controlDevice == -2)
           _keyboardEventHandler->SetWasdVehicle(_vehicles[player]);
