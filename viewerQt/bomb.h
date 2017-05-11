@@ -11,10 +11,14 @@ class ViewerWidget;
 class Bomb : public osg::MatrixTransform
 {
 public:
-  Bomb(int x, int y, int z, Vehicle& parentVehicle, 
-    std::vector<osg::ref_ptr<Vehicle>>& vehicles,
-    std::vector<std::vector<osg::ref_ptr<Tile>>>& tileMap,
-    std::list<osg::Node*>& toDelete, ViewerWidget& ViewerWindow);
+  Bomb( int x, 
+        int y, 
+        int z, 
+        Vehicle& parentVehicle, 
+        std::vector<osg::ref_ptr<Vehicle>>& vehicles,
+        std::vector<std::vector<osg::ref_ptr<Tile>>>& tileMap,
+        std::list<osg::Node*>& toDelete, 
+        ViewerWidget& ViewerWindow);
   void Explode();
 private:
   bool destroyTilesAt(int x, int z);

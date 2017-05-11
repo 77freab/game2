@@ -7,7 +7,7 @@
 
 #include "mapBuilder.h"
 
-osg::ref_ptr<osg::Geode> MapBuilder::makeNewTile(tileType bt, tileStyle ts)
+osg::ref_ptr<osg::Geode> MapBuilder::makeNewTile(Tile::tileType bt, Tile::tileStyle ts)
 {
   // color
   osg::ref_ptr<osg::Vec4Array> color = new osg::Vec4Array;
@@ -20,7 +20,7 @@ osg::ref_ptr<osg::Geode> MapBuilder::makeNewTile(tileType bt, tileStyle ts)
   osg::ref_ptr<osg::Vec2Array> texCoord = new osg::Vec2Array;
 
   // if tile is flat (water, ice)
-  if (ts == tileStyle::FLAT)
+  if (ts == Tile::tileStyle::FLAT)
   {
     // vertices
     geom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::QUADS, 0, 4));
@@ -129,7 +129,7 @@ osg::ref_ptr<osg::Geode> MapBuilder::makeNewTile(tileType bt, tileStyle ts)
   return geode;
 }
 
-osg::ref_ptr<Tile> MapBuilder::getTile(int x, int y, int z, tileType bt)
+osg::ref_ptr<Tile> MapBuilder::getTile(int x, int y, int z, Tile::tileType bt)
 {
   osg::ref_ptr<Tile> tile = new Tile(bt);
   osg::Matrix m;
@@ -138,9 +138,8 @@ osg::ref_ptr<Tile> MapBuilder::getTile(int x, int y, int z, tileType bt)
 
   if (_tiles[static_cast<int>(bt)] == nullptr)
   {
-    tileStyle ts = tileStyle::VOLUMETRIC;
-    if (bt == tileType::WATER || bt == tileType::ICE)
-      ts = tileStyle::FLAT;
+    Tile::tileStyle ts = Tile::tileStyle::VOLUMETRIC;
+    if (bt == Tile::tileType::WATER || bt == Tile::tileType::ICE) ts = Tile::tileStyle::FLAT;
     makeNewTile(bt, ts);
   }
 
@@ -175,10 +174,8 @@ void MapBuilder::skipUnknownElement(QXmlStreamReader& reader)
     {
       QString aa = reader.name().toString();
       bool a = false;
-      if (reader.name() == "x" || reader.name() == "z")
-        skipUnknownElement(reader);
-      if (reader.name() == "tile")
-        break;
+      if (reader.name() == "x" || reader.name() == "z") skipUnknownElement(reader);
+      if (reader.name() == "tile") break;
     }
     else
     {
@@ -188,8 +185,9 @@ void MapBuilder::skipUnknownElement(QXmlStreamReader& reader)
 }
 
 int MapBuilder::CreateMap(osg::ref_ptr<osg::Group> scene,
-  std::vector<std::vector<osg::ref_ptr<Tile>>>& tileMap,
-  QString fileName, osg::Vec2i& mapSize)
+                          std::vector<std::vector<osg::ref_ptr<Tile>>>& tileMap,
+                          QString fileName, 
+                          osg::Vec2i& mapSize)
 {
   _tiles.clear();
   for (int i = 0; i < 10; i++)
@@ -197,8 +195,10 @@ int MapBuilder::CreateMap(osg::ref_ptr<osg::Group> scene,
 
   QXmlStreamReader reader;
   QFile file(fileName);
-  if (!file.open(QIODevice::ReadOnly | QFile::Text))
-    return -1; // file can not be opened
+
+  // file can not be opened
+  if (!file.open(QIODevice::ReadOnly | QFile::Text)) return -1; 
+
   reader.setDevice(&file);
   reader.readNext();
   while (!reader.atEnd())
@@ -237,18 +237,18 @@ int MapBuilder::CreateMap(osg::ref_ptr<osg::Group> scene,
             }
             else if (reader.name() == "tile")
             {
-              tileType type;
+              Tile::tileType type;
               int x, z;
               QString attrStr = reader.attributes()[0].name().toString();
               if (attrStr == "type")
               {
                 QString attrValue = reader.attributes()[0].value().toString();
-                if (attrValue == "BORDER") type = tileType::BORDER;
-                else if (attrValue == "BRICK") type = tileType::BRICK;
-                else if (attrValue == "ARMOR") type = tileType::ARMOR;
-                else if (attrValue == "WATER") type = tileType::WATER;
-                else if (attrValue == "BUSHES") type = tileType::BUSHES;
-                else if (attrValue == "ICE") type = tileType::ICE;
+                if (attrValue == "BORDER") type = Tile::tileType::BORDER;
+                else if (attrValue == "BRICK") type = Tile::tileType::BRICK;
+                else if (attrValue == "ARMOR") type = Tile::tileType::ARMOR;
+                else if (attrValue == "WATER") type = Tile::tileType::WATER;
+                else if (attrValue == "BUSHES") type = Tile::tileType::BUSHES;
+                else if (attrValue == "ICE") type = Tile::tileType::ICE;
               }
               reader.readNext();
               while (!reader.atEnd())
@@ -257,8 +257,7 @@ int MapBuilder::CreateMap(osg::ref_ptr<osg::Group> scene,
                 {
                   QString aa = reader.name().toString();
                   bool a = false;
-                  if (reader.name() == "tile")
-                    break;
+                  if (reader.name() == "tile") break;
                   reader.readNext();
                 }
                 if (reader.isStartElement())
@@ -308,17 +307,5 @@ int MapBuilder::CreateMap(osg::ref_ptr<osg::Group> scene,
     }
   }
   file.close();
-
-  //std::map<osg::Vec2i, tileType>::const_iterator it;
-  //for (int x = 0; x < mapSize[0]; x++)
-  //  for (int z = 0; z < mapSize[1]; z++)
-  //    if ((it = typeMap.find({ x, z })) != typeMap.end())
-  //    {
-  //      if ((*it).second == tileType::WATER || (*it).second == tileType::ICE)
-  //        tileMap[{ x, z }] = getTile(x * 8, 0, z * 8, (*it).second, tileStyle::FLAT);
-  //      else
-  //        tileMap[{ x, z }] = getTile(x * 8, 0, z * 8, (*it).second);
-  //      scene->addChild(tileMap[{ x, z }]);
-  //    }
   return 0;
 }

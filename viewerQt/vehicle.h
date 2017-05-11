@@ -6,9 +6,6 @@
 
 #include "mapBuilder.h"
 
-const int SHOT_TIMEOUT = 300; // delay between shots in ms
-const int COLORED_TEXTURES_NUM = 11;
-
 enum class direction
 {
   UP = 0,
@@ -19,17 +16,11 @@ enum class direction
 
 class ViewerWidget;
 
-class VehicleCallback : public osg::NodeCallback
-{
-public:
-  void operator()(osg::Node*, osg::NodeVisitor*) override;
-private:
-  bool delay = false;
-};
-
 class Vehicle : public osg::MatrixTransform
 {
 public:
+  static const int SHOT_TIMEOUT = 300; // delay between shots in ms
+  static const int COLORED_TEXTURES_NUM = 11;
   enum class type
   {
     LIGHT = 0,
@@ -56,14 +47,21 @@ public:
   inline const int AddKill();
   inline const int GetPlayerNum() const;
   inline const type GetType() const;
+  inline const int GetKillCount() const;
 
 protected:
   Vehicle();
-  Vehicle(int x, int z, int speed, type startType, int playerNum, int controlDevice,
-    std::vector<osg::ref_ptr<Vehicle>>& vehicles,
-    std::vector<std::vector<osg::ref_ptr<Tile>>>& tileMap,
-    std::list<osg::Node*>& toDelete,
-    ViewerWidget& ViewerWindow);
+  Vehicle(int x, 
+          int z, 
+          int speed, 
+          type startType, 
+          int playerNum, 
+          int controlDevice, 
+          int killCount,
+          std::vector<osg::ref_ptr<Vehicle>>& vehicles,
+          std::vector<std::vector<osg::ref_ptr<Tile>>>& tileMap,
+          std::list<osg::Node*>& toDelete,
+          ViewerWidget& ViewerWindow);
 
   inline osg::MatrixTransform* getRotateMT() const;
   inline QDeadlineTimer* getShotDelayTimer() const;
@@ -81,10 +79,10 @@ private:
   int _z;
   QDeadlineTimer* _shotDelayTimer;
   int _controlDevice;
-  int _killCount = 0;
+  int _killCount;
   bool _enabled = false;
   int _player;
-  osg::ref_ptr<VehicleCallback> _clb;
+  osg::ref_ptr<osg::NodeCallback> _clb;
   osg::ref_ptr<osg::MatrixTransform> _rMt;
   direction _goDir = direction::UP;
   direction _curDir = direction::UP;
@@ -159,6 +157,11 @@ inline const int Vehicle::GetPlayerNum() const
 inline const Vehicle::type Vehicle::GetType() const
 {
   return _currentType;
+}
+
+inline const int Vehicle::GetKillCount() const
+{
+  return _killCount;
 }
 
 inline osg::MatrixTransform* Vehicle::getRotateMT() const

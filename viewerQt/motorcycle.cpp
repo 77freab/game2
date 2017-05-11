@@ -4,12 +4,17 @@
 #include "bomb.h"
 #include "motorcycle.h"
 
-Motorcycle::Motorcycle(int x, int z, int playerNum, int controlDevice,
-  std::vector<osg::ref_ptr<Vehicle>>& vehicles,
-  std::vector<std::vector<osg::ref_ptr<Tile>>>& tileMap,
-  std::list<osg::Node*>& toDelete,
-  ViewerWidget& ViewerWindow)
-  : Vehicle(x, z, 3, type::MOTO, playerNum, controlDevice, vehicles, tileMap, toDelete, ViewerWindow)
+Motorcycle::Motorcycle( int x, 
+                        int z, 
+                        int playerNum, 
+                        int controlDevice,
+                        std::vector<osg::ref_ptr<Vehicle>>& vehicles,
+                        std::vector<std::vector<osg::ref_ptr<Tile>>>& tileMap,
+                        std::list<osg::Node*>& toDelete,
+                        ViewerWidget& ViewerWindow, 
+                        int killCount) : 
+  Vehicle(x, z, 3, type::MOTO, playerNum, controlDevice, 
+  killCount, vehicles, tileMap, toDelete, ViewerWindow)
 {
   setDataVariance(osg::Object::DYNAMIC);
 

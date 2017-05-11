@@ -46,8 +46,9 @@ private:
 class ViewerWidget : public QWidget
 {
 public:
-  ViewerWidget(QWidget* parent = 0, Qt::WindowFlags f = 0,
-    osgViewer::ViewerBase::ThreadingModel threadingModel = osgViewer::Viewer::SingleThreaded);
+  ViewerWidget( QWidget* parent = 0, 
+                Qt::WindowFlags f = 0,
+                osgViewer::ViewerBase::ThreadingModel threadingModel = osgViewer::Viewer::SingleThreaded);
 private:
   void loadMap();
   QString controlsName(int controlDevice);
@@ -86,6 +87,5 @@ private:
 
   std::vector<osg::ref_ptr<Vehicle>> _vehicles; // vector containing all vihecles
   std::list<osg::Node*> _toDelete; // queue for deleting osg referensed objects
-  std::vector<std::vector<osg::ref_ptr<Tile>>> _tileMap;
-  //std::map<osg::Vec2i, osg::ref_ptr<Tile>> _tileMap; // list of coordinates and pointers to tiles located on these coordinates
+  std::vector<std::vector<osg::ref_ptr<Tile>>> _tileMap; // 2D vector of pointers to tiles located on coordinates same as indexes of vector
 };

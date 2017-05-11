@@ -12,10 +12,16 @@ class ProjectileCallback;
 class Projectile : public osg::MatrixTransform
 {
 public:
-  Projectile(int x, int y, int z, int speed, direction dir, Vehicle& parentVehicle,
-    std::vector<osg::ref_ptr<Vehicle>>& vehicles,
-    std::vector<std::vector<osg::ref_ptr<Tile>>>& tileMap,
-    std::list<osg::Node*>& toDelete, ViewerWidget& ViewerWindow);
+  Projectile( int x, 
+              int y, 
+              int z, 
+              int speed, 
+              direction dir, 
+              Vehicle& parentVehicle,
+              std::vector<osg::ref_ptr<Vehicle>>& vehicles,
+              std::vector<std::vector<osg::ref_ptr<Tile>>>& tileMap,
+              std::list<osg::Node*>& toDelete, 
+              ViewerWidget& ViewerWindow);
   void TryToMove();
 private:
   std::function<void()> moving;

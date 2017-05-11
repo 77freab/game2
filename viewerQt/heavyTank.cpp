@@ -4,12 +4,17 @@
 #include "heavyTank.h"
 #include "projectile.h"
 
-HeavyTank::HeavyTank(int x, int z, int playerNum, int controlDevice,
-  std::vector<osg::ref_ptr<Vehicle>>& vehicles,
-  std::vector<std::vector<osg::ref_ptr<Tile>>>& tileMap,
-  std::list<osg::Node*>& toDelete,
-  ViewerWidget& ViewerWindow)
-  : Vehicle(x, z, 1, type::HEAVY, playerNum, controlDevice, vehicles, tileMap, toDelete, ViewerWindow)
+HeavyTank::HeavyTank( int x, 
+                      int z, 
+                      int playerNum, 
+                      int controlDevice,
+                      std::vector<osg::ref_ptr<Vehicle>>& vehicles,
+                      std::vector<std::vector<osg::ref_ptr<Tile>>>& tileMap,
+                      std::list<osg::Node*>& toDelete,
+                      ViewerWidget& ViewerWindow, 
+                      int killCount) : 
+  Vehicle(x, z, 1, type::HEAVY, playerNum, controlDevice,
+  killCount, vehicles, tileMap, toDelete, ViewerWindow)
 {
   setDataVariance(osg::Object::DYNAMIC);
 

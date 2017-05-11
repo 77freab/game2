@@ -2,25 +2,11 @@
 
 #include <osg/MatrixTransform>
 
-enum class tileStyle
-{
-  FLAT = 0,
-  VOLUMETRIC = 1
-};
-
-enum class tileType
-{
-  BORDER = 0,
-  BRICK = 1,
-  ARMOR = 2,
-  WATER = 3,
-  BUSHES = 4,
-  ICE = 5
-};
-
 class Tile : public osg::MatrixTransform
 {
 public:
+  enum class tileStyle;
+  enum class tileType;
   Tile(tileType bt)
     : _type(bt)
   {}
@@ -31,4 +17,20 @@ public:
 
 private:
   tileType _type;
+};
+
+enum class Tile::tileStyle
+{
+  FLAT = 0,
+  VOLUMETRIC = 1
+};
+
+enum class Tile::tileType
+{
+  BORDER = 0,
+  BRICK = 1,
+  ARMOR = 2,
+  WATER = 3,
+  BUSHES = 4,
+  ICE = 5
 };

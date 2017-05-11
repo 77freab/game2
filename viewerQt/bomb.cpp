@@ -22,7 +22,7 @@ void BombCallback::operator()(osg::Node* nd, osg::NodeVisitor* ndv)
 {
   if (_delay == BOMB_BANG_DELAY)
   {
-    Bomb* bmb = dynamic_cast<Bomb*>(nd);
+    Bomb* bmb = static_cast<Bomb*>(nd);
     bmb->Explode();
   }
   _delay++;
@@ -30,14 +30,23 @@ void BombCallback::operator()(osg::Node* nd, osg::NodeVisitor* ndv)
 }
 
 // constructor
-Bomb::Bomb(int x, int y, int z, Vehicle& parentVehicle,
-  std::vector<osg::ref_ptr<Vehicle>>& vehicles,
-  std::vector<std::vector<osg::ref_ptr<Tile>>>& tileMap,
-  std::list<osg::Node*>& toDelete, ViewerWidget& ViewerWindow)
-  //  : _x(qFloor(x / 16.) * 16 + 8), _y(y), _z(qFloor(z / 16.) * 16 + 8), 
-  : _x(qFloor(x / 8.) * 8), _y(y), _z(qFloor(z / 8.) * 8),
-  _clb(new BombCallback), _vehicles(vehicles), _tileMap(tileMap),
-  _toDelete(toDelete), _ViewerWindow(ViewerWindow), _parentVehicle(parentVehicle)
+Bomb::Bomb( int x, 
+            int y, 
+            int z, 
+            Vehicle& parentVehicle,
+            std::vector<osg::ref_ptr<Vehicle>>& vehicles,
+            std::vector<std::vector<osg::ref_ptr<Tile>>>& tileMap,
+            std::list<osg::Node*>& toDelete, 
+            ViewerWidget& ViewerWindow) : 
+  _x(qFloor(x / 8.) * 8), 
+  _y(y), 
+  _z(qFloor(z / 8.) * 8),
+  _clb(new BombCallback), 
+  _vehicles(vehicles), 
+  _tileMap(tileMap),
+  _toDelete(toDelete), 
+  _ViewerWindow(ViewerWindow),
+  _parentVehicle(parentVehicle)
 {
   setUpdateCallback(_clb);
 
@@ -69,7 +78,8 @@ bool Bomb::destroyTilesAt(int x, int z)
 
   // if there is a tile on given coordinates
   if ((curTile = _tileMap[x][z]) != nullptr)
-    if (curTile->GetType() == tileType::BRICK)
+  {
+    if (curTile->GetType() == Tile::tileType::BRICK)
     {
       // destroy this tile
       _toDelete.push_back(_tileMap[x][z]);
@@ -78,45 +88,48 @@ bool Bomb::destroyTilesAt(int x, int z)
     }
     else
       stop = true;
+  }
 
   return stop;
 }
 
 void Bomb::destroyVehiclesAt(int fromX, int toX, int fromZ, int toZ)
 {
-  // cycle by all vihecles
-  for (auto it = _vehicles.cbegin(); it != _vehicles.end(); ++it)
+  // cycle by all vehicles
+  for (Vehicle* curVehicle : _vehicles)
   {
-    int vehicleX = (*it)->GetXCoord();
-    int vehicleZ = (*it)->GetZCoord();
+    int vehicleX = curVehicle->GetXCoord();
+    int vehicleZ = curVehicle->GetZCoord();
     if (vehicleX > fromX && vehicleX < toX)
+    {
       if (vehicleZ > fromZ && vehicleZ < toZ)
       {
-        Vehicle* attackedEnemy = (*it).get();
-
-        if (attackedEnemy->IsEnabled())
+        if (curVehicle->IsEnabled())
         {
           // creating explosion
-          Bang* bng = new Bang((*it)->GetXCoord(), -4, (*it)->GetZCoord(), _toDelete);
+          Bang* bng = new Bang(vehicleX, -4, vehicleZ, _toDelete);
           getParent(0)->addChild(bng);
 
           // destroing vehicle
-          attackedEnemy->Disable(); // disabling it
-          _toDelete.push_back(attackedEnemy); // puting it to the queue for deleting from scene
+          curVehicle->Disable(); // disabling it
+          _toDelete.push_back(curVehicle); // puting it to the queue for deleting from scene
 
           // increase number of kills (suicide doesn't count)
-          if (&_parentVehicle != attackedEnemy)
+          if (&_parentVehicle != curVehicle)
+          {
             QApplication::postEvent(&_ViewerWindow, new VehicleKilledSomebody
               (_parentVehicle.GetPlayerNum(), _parentVehicle.AddKill()));
+          }
 
           // after pause enemy will respawn
           ViewerWidget* vw = &_ViewerWindow;
-          QTimer::singleShot(3000, vw, [attackedEnemy, vw]
+          QTimer::singleShot(3000, vw, [curVehicle, vw]
           {
-            QApplication::postEvent(vw, new VehicleNeedRespawn(attackedEnemy));
+            QApplication::postEvent(vw, new VehicleNeedRespawn(curVehicle));
           });
         }
       }
+    }
   }
 }
 
@@ -137,8 +150,7 @@ void Bomb::Explode()
     // destroing tiles
     pr1 = destroyTilesAt(bombX - 1, toZ);
     pr2 = destroyTilesAt(bombX, toZ);
-    if (pr1 || pr2)
-      break;
+    if (pr1 || pr2) break;
   }
   // from below
   for (fromZ = bombZ - 2; fromZ > bombZ - 6; fromZ--)
@@ -149,8 +161,7 @@ void Bomb::Explode()
     // destroing tiles
     pr1 = destroyTilesAt(bombX - 1, fromZ);
     pr2 = destroyTilesAt(bombX, fromZ);
-    if (pr1 || pr2)
-      break;
+    if (pr1 || pr2) break;
   }
   // destroing vehicles vertically (above and below bomb)
   destroyVehiclesAt(_x - 8, _x + 8, fromZ * 8, toZ * 8);
@@ -163,8 +174,7 @@ void Bomb::Explode()
     // destroing tiles
     pr1 = destroyTilesAt(fromX, bombZ - 1);
     pr2 = destroyTilesAt(fromX, bombZ);
-    if (pr1 || pr2)
-      break;
+    if (pr1 || pr2) break;
   }
   // from right
   for (toX = bombX + 1; toX < bombX + 5; toX++)
@@ -175,8 +185,7 @@ void Bomb::Explode()
     // destroing tiles
     pr1 = destroyTilesAt(toX, bombZ - 1);
     pr2 = destroyTilesAt(toX, bombZ);
-    if (pr1 || pr2)
-      break;
+    if (pr1 || pr2) break;
   }
   // destroing vehicles horizontally (right and left from bomb)
   destroyVehiclesAt(fromX * 8, toX * 8, _z - 8, _z + 8);

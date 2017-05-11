@@ -54,128 +54,129 @@ public:
     _left = direction::LEFT;
     _right = direction::RIGHT;
   }
+  
   bool handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter&) override
   {
+    using keyboard = osgGA::GUIEventAdapter; // to make constants shorter
+
     switch (ea.getEventType())
     {
-    case(osgGA::GUIEventAdapter::KEYDOWN) :
+    case(keyboard::KEYDOWN) :
     {
       if (_wasdVehicle != nullptr)
-        switch (ea.getKey())
       {
-        case(119) : // W
+        switch (ea.getKey())
         {
-          _pressedKeys[119] = true;
-          _wasdVehicle->SetMovingDirection(_up);
-          break;
-        }
-        case(115) : // S
-        {
-          _pressedKeys[115] = true;
-          _wasdVehicle->SetMovingDirection(_down);
-          break;
-        }
-        case(97) : // A
-        {
-          _pressedKeys[97] = true;
-          _wasdVehicle->SetMovingDirection(_left);
-          break;
-        }
-        case(100) : // D
-        {
-          _pressedKeys[100] = true;
-          _wasdVehicle->SetMovingDirection(_right);
-          break;
-        }
-        case(32) : // SPACE
-        {
-          _wasdVehicle->Shoot();
-          break;
+        case(keyboard::KEY_W) : // W
+          {
+            _pressedKeys[keyboard::KEY_W] = true;
+            _wasdVehicle->SetMovingDirection(_up);
+            break;
+          }
+          case(keyboard::KEY_S) : // S
+          {
+            _pressedKeys[keyboard::KEY_S] = true;
+            _wasdVehicle->SetMovingDirection(_down);
+            break;
+          }
+          case(keyboard::KEY_A) : // A
+          {
+            _pressedKeys[keyboard::KEY_A] = true;
+            _wasdVehicle->SetMovingDirection(_left);
+            break;
+          }
+          case(keyboard::KEY_D) : // D
+          {
+            _pressedKeys[keyboard::KEY_D] = true;
+            _wasdVehicle->SetMovingDirection(_right);
+            break;
+          }
+          case(keyboard::KEY_Space) : // SPACE
+          {
+            _wasdVehicle->Shoot();
+            break;
+          }
         }
       }
       /////////////////same for arrows/////////////////////
       if (_arrowsVehicle != nullptr)
-        switch (ea.getKey())
       {
-        case(osgGA::GUIEventAdapter::KEY_Up) : // up
+        switch (ea.getKey())
         {
-          _pressedKeys[65362] = true;
-          _arrowsVehicle->SetMovingDirection(_up);
-          break;
-        }
-        case(osgGA::GUIEventAdapter::KEY_Down) : // down
-        {
-          _pressedKeys[65364] = true;
-          _arrowsVehicle->SetMovingDirection(_down);
-          break;
-        }
-        case(osgGA::GUIEventAdapter::KEY_Left) : // left
-        {
-          _pressedKeys[65361] = true;
-          _arrowsVehicle->SetMovingDirection(_left);
-          break;
-        }
-        case(osgGA::GUIEventAdapter::KEY_Right) : // right
-        {
-          _pressedKeys[65363] = true;
-          _arrowsVehicle->SetMovingDirection(_right);
-          break;
-        }
-        case(osgGA::GUIEventAdapter::KEY_0) : // num0
-        {
-          _arrowsVehicle->Shoot();
-          break;
+          case(keyboard::KEY_Up) : // up
+          {
+            _pressedKeys[keyboard::KEY_Up] = true;
+            _arrowsVehicle->SetMovingDirection(_up);
+            break;
+          }
+          case(keyboard::KEY_Down) : // down
+          {
+            _pressedKeys[keyboard::KEY_Down] = true;
+            _arrowsVehicle->SetMovingDirection(_down);
+            break;
+          }
+          case(keyboard::KEY_Left) : // left
+          {
+            _pressedKeys[keyboard::KEY_Left] = true;
+            _arrowsVehicle->SetMovingDirection(_left);
+            break;
+          }
+          case(keyboard::KEY_Right) : // right
+          {
+            _pressedKeys[keyboard::KEY_Right] = true;
+            _arrowsVehicle->SetMovingDirection(_right);
+            break;
+          }
+          case(keyboard::KEY_0) : // num0
+          {
+            _arrowsVehicle->Shoot();
+            break;
+          }
         }
       }
       return true;
     }
-    case(osgGA::GUIEventAdapter::KEYUP) :
+    case(keyboard::KEYUP) :
     {
       int key = ea.getKey();
       if (_wasdVehicle != nullptr)
-        switch (key)
       {
-        case(119) : // W
-        case(115) : // S
-        case(97) : // A
-        case(100) : // D
+        switch (key)
         {
-          _pressedKeys[key] = false;
-          // if there is at least one key held then vehicle move to that direction
-          if (_pressedKeys[119])
-            _wasdVehicle->SetMovingDirection(_up);
-          else if (_pressedKeys[115])
-            _wasdVehicle->SetMovingDirection(_down);
-          else if (_pressedKeys[97])
-            _wasdVehicle->SetMovingDirection(_left);
-          else if (_pressedKeys[100])
-            _wasdVehicle->SetMovingDirection(_right);
-          else
-            _wasdVehicle->Stop();
-          break;
+          case(keyboard::KEY_W) : // W
+          case(keyboard::KEY_S) : // S
+          case(keyboard::KEY_A) : // A
+          case(keyboard::KEY_D) : // D
+          {
+            _pressedKeys[key] = false;
+            // if there is at least one key held then vehicle move to that direction
+            if (_pressedKeys[keyboard::KEY_W]) _wasdVehicle->SetMovingDirection(_up);
+            else if (_pressedKeys[keyboard::KEY_S]) _wasdVehicle->SetMovingDirection(_down);
+            else if (_pressedKeys[keyboard::KEY_A]) _wasdVehicle->SetMovingDirection(_left);
+            else if (_pressedKeys[keyboard::KEY_D]) _wasdVehicle->SetMovingDirection(_right);
+            else _wasdVehicle->Stop();
+            break;
+          }
         }
       }
       // same for arrows
       if (_arrowsVehicle != nullptr)
-        switch (key)
       {
-        case(65362) : // up
-        case(65364) : // down
-        case(65361) : // left
-        case(65363) : // right
+        switch (key)
         {
-          _pressedKeys[key] = false;
-          if (_pressedKeys[65362])
-            _arrowsVehicle->SetMovingDirection(_up);
-          else if (_pressedKeys[65364])
-            _arrowsVehicle->SetMovingDirection(_down);
-          else if (_pressedKeys[65361])
-            _arrowsVehicle->SetMovingDirection(_left);
-          else if (_pressedKeys[65363])
-            _arrowsVehicle->SetMovingDirection(_right);
-          else
-            _arrowsVehicle->Stop();
-          break;
+          case(keyboard::KEY_Up) : // up
+          case(keyboard::KEY_Down) : // down
+          case(keyboard::KEY_Left) : // left
+          case(keyboard::KEY_Right) : // right
+          {
+            _pressedKeys[key] = false;
+            if (_pressedKeys[keyboard::KEY_Up]) _arrowsVehicle->SetMovingDirection(_up);
+            else if (_pressedKeys[keyboard::KEY_Down]) _arrowsVehicle->SetMovingDirection(_down);
+            else if (_pressedKeys[keyboard::KEY_Left]) _arrowsVehicle->SetMovingDirection(_left);
+            else if (_pressedKeys[keyboard::KEY_Right]) _arrowsVehicle->SetMovingDirection(_right);
+            else _arrowsVehicle->Stop();
+            break;
+          }
         }
       }
       return true;
@@ -207,9 +208,12 @@ private:
 };
 
 // main window - constructor
-ViewerWidget::ViewerWidget(QWidget* parent, Qt::WindowFlags f,
-  osgViewer::ViewerBase::ThreadingModel threadingModel)
-  : QWidget(parent, f), _viewer(new osgViewer::Viewer), _keyboardEventHandler(new KeyboardEventHandler)
+ViewerWidget::ViewerWidget( QWidget* parent, 
+                            Qt::WindowFlags f,
+                            osgViewer::ViewerBase::ThreadingModel threadingModel) : 
+  QWidget(parent, f), 
+  _viewer(new osgViewer::Viewer), 
+  _keyboardEventHandler(new KeyboardEventHandler)
 {
   srand(time(NULL));
   _viewer->setThreadingModel(threadingModel);
@@ -294,20 +298,16 @@ ViewerWidget::ViewerWidget(QWidget* parent, Qt::WindowFlags f,
 void ViewerWidget::loadMap()
 {
   _fileName = QFileDialog::getOpenFileName(this, "Open map","./Resources/maps","XML files (*.xml)");
-  if (_fileName != nullptr)
-    restart();
+  if (_fileName != nullptr) restart();
 }
 
 // accept number of control device, 
 // return string with the name of this control device
 QString ViewerWidget::controlsName(int controlDevice)
 {
-  if (controlDevice == -2)
-    return QString("WASD + Space");
-  else if (controlDevice == -1)
-    return QString("Arrows + Num 0");
-  else
-    return QString("Joystick " + QString::number(controlDevice));
+  if (controlDevice == -2) return QString("WASD + Space");
+  else if (controlDevice == -1) return QString("Arrows + Num 0");
+  else return QString("Joystick " + QString::number(controlDevice));
 }
 
 // changing control type for specific player
@@ -324,23 +324,17 @@ void ViewerWidget::changeControls(int player, int controlDevice)
       _vehicles[i]->SetControlDevice(swapControl);
       QPushButton* btn = dynamic_cast<QPushButton*>(_playersList->itemWidget(_playersList->topLevelItem(i), 3));
       btn->setText(controlsName(swapControl));
-      if (swapControl == -2)
-        _keyboardEventHandler->SetWasdVehicle(_vehicles[i]);
-      else if (swapControl == -1)
-        _keyboardEventHandler->SetArrowsVehicle(_vehicles[i]);
+      if (swapControl == -2) _keyboardEventHandler->SetWasdVehicle(_vehicles[i]);
+      else if (swapControl == -1) _keyboardEventHandler->SetArrowsVehicle(_vehicles[i]);
     }
-    else if (swapControl == -2)
-      _keyboardEventHandler->SetWasdVehicle(nullptr);
-    else if (swapControl == -1)
-      _keyboardEventHandler->SetArrowsVehicle(nullptr);
+    else if (swapControl == -2) _keyboardEventHandler->SetWasdVehicle(nullptr);
+    else if (swapControl == -1) _keyboardEventHandler->SetArrowsVehicle(nullptr);
   }
 
   _vehicles[player]->SetControlDevice(controlDevice);
 
-  if (controlDevice == -2)
-    _keyboardEventHandler->SetWasdVehicle(_vehicles[player]);
-  else if (controlDevice == -1)
-    _keyboardEventHandler->SetArrowsVehicle(_vehicles[player]);
+  if (controlDevice == -2) _keyboardEventHandler->SetWasdVehicle(_vehicles[player]);
+  else if (controlDevice == -1) _keyboardEventHandler->SetArrowsVehicle(_vehicles[player]);
 }
 
 // called when user press "add player" button
@@ -355,15 +349,14 @@ void ViewerWidget::addPlayer()
     for (int freeControl = -2; freeControl < _numJoysticks; freeControl++)
     {
       bool pr = true;
-      for (auto it = _vehicles.cbegin(); it != _vehicles.cend(); it++)
+      for (Vehicle* curVehicle : _vehicles)
       {
-        if ((*it)->GetControlDevice() == freeControl)
-          pr = false;
+        if (curVehicle->GetControlDevice() == freeControl) pr = false;
       }
       if (pr)
       {
         _vehicles.push_back(new LightTank(0, 0, player, freeControl,
-          _vehicles, _tileMap, _toDelete, *this));
+          _vehicles, _tileMap, _toDelete, *this, 0));
         break;
       }
     }
@@ -372,7 +365,7 @@ void ViewerWidget::addPlayer()
 
     QTreeWidgetItem *item = new QTreeWidgetItem(_playersList);
 
-    item->setIcon(0, QIcon("./Resources/heavyTank/" + QString::number(_playerNum % COLORED_TEXTURES_NUM) + ".bmp"));
+    item->setIcon(0, QIcon("./Resources/heavyTank/" + QString::number(_playerNum % Vehicle::COLORED_TEXTURES_NUM) + ".bmp"));
     item->setText(1, QString::fromLocal8Bit("0"));
 
     // button showing list of vehicle types
@@ -386,19 +379,22 @@ void ViewerWidget::addPlayer()
     { 
       if (_vehicles[player]->GetType() != Vehicle::type::LIGHT)
       {
+        // saving some information before deleting old vehicle
         int controlDevice = _vehicles[player]->GetControlDevice();
+        int killCount = _vehicles[player]->GetKillCount();
+
         _vehicles[player]->Disable();
 
         if (_vehicles[player]->getNumParents() != 0)
+        {
           _vehicles[player]->getParent(0)->removeChild(_vehicles[player]);
+        }
 
         _vehicles[player] = new LightTank(0, 0, player, controlDevice,
-          _vehicles, _tileMap, _toDelete, *this);
+          _vehicles, _tileMap, _toDelete, *this, killCount);
 
-        if (controlDevice == -2)
-          _keyboardEventHandler->SetWasdVehicle(_vehicles[player]);
-        else if (controlDevice == -1)
-          _keyboardEventHandler->SetArrowsVehicle(_vehicles[player]);
+        if (controlDevice == -2) _keyboardEventHandler->SetWasdVehicle(_vehicles[player]);
+        else if (controlDevice == -1) _keyboardEventHandler->SetArrowsVehicle(_vehicles[player]);
 
         _playersList->itemWidget(_playersList->topLevelItem(player), 4)->setEnabled(true);
       }
@@ -413,19 +409,22 @@ void ViewerWidget::addPlayer()
     { 
       if (_vehicles[player]->GetType() != Vehicle::type::HEAVY)
       {
+        // saving some information before deleting old vehicle
         int controlDevice = _vehicles[player]->GetControlDevice();
+        int killCount = _vehicles[player]->GetKillCount();
+
         _vehicles[player]->Disable();
 
         if (_vehicles[player]->getNumParents() != 0)
+        {
           _vehicles[player]->getParent(0)->removeChild(_vehicles[player]);
+        }
 
         _vehicles[player] = new HeavyTank(0, 0, player, controlDevice,
-          _vehicles, _tileMap, _toDelete, *this);
+          _vehicles, _tileMap, _toDelete, *this, killCount);
 
-        if (controlDevice == -2)
-          _keyboardEventHandler->SetWasdVehicle(_vehicles[player]);
-        else if (controlDevice == -1)
-          _keyboardEventHandler->SetArrowsVehicle(_vehicles[player]);
+        if (controlDevice == -2) _keyboardEventHandler->SetWasdVehicle(_vehicles[player]);
+        else if (controlDevice == -1) _keyboardEventHandler->SetArrowsVehicle(_vehicles[player]);
 
         _playersList->itemWidget(_playersList->topLevelItem(player), 4)->setEnabled(true);
       }
@@ -440,19 +439,22 @@ void ViewerWidget::addPlayer()
     {
       if (_vehicles[player]->GetType() != Vehicle::type::MOTO)
       {
+        // saving some information before deleting old vehicle
         int controlDevice = _vehicles[player]->GetControlDevice();
+        int killCount = _vehicles[player]->GetKillCount();
+
         _vehicles[player]->Disable();
 
         if (_vehicles[player]->getNumParents() != 0)
+        {
           _vehicles[player]->getParent(0)->removeChild(_vehicles[player]);
+        }
 
         _vehicles[player] = new Motorcycle(0, 0, player, controlDevice,
-          _vehicles, _tileMap, _toDelete, *this);
+          _vehicles, _tileMap, _toDelete, *this, killCount);
 
-        if (controlDevice == -2)
-          _keyboardEventHandler->SetWasdVehicle(_vehicles[player]);
-        else if (controlDevice == -1)
-          _keyboardEventHandler->SetArrowsVehicle(_vehicles[player]);
+        if (controlDevice == -2) _keyboardEventHandler->SetWasdVehicle(_vehicles[player]);
+        else if (controlDevice == -1) _keyboardEventHandler->SetArrowsVehicle(_vehicles[player]);
 
         _playersList->itemWidget(_playersList->topLevelItem(player), 4)->setEnabled(true);
       }
@@ -467,9 +469,13 @@ void ViewerWidget::addPlayer()
     QPushButton* controlsBtn = new QPushButton(controlsName(_vehicles.back()->GetControlDevice()));
     // by default vehicles 0 and 1 controlled by WASD and arrows respectively
     if (_vehicles.back()->GetControlDevice() == -2)
+    {
       _keyboardEventHandler->SetWasdVehicle(_vehicles.back());
+    }
     if (_vehicles.back()->GetControlDevice() == -1)
+    {
       _keyboardEventHandler->SetArrowsVehicle(_vehicles.back());
+    }
 
     QMenu* controlsMenu = new QMenu;
 
@@ -584,8 +590,7 @@ void ViewerWidget::restart()
   if ((temp = createScene()) != nullptr)
   {
     // disabling all vehicles
-    for (auto it = _vehicles.cbegin(); it != _vehicles.cend(); it++)
-      (*it)->Disable();
+    for (Vehicle* curVehicle : _vehicles) curVehicle->Disable();
 
     // making spawn button active and reseting kill counter
     for (int i = 0; i < _playersList->topLevelItemCount(); i++)
@@ -680,7 +685,9 @@ void ViewerWidget::testSDLJoystick()
   _numJoysticks = SDL_NumJoysticks();
 
   // Check for joystick
-  _console->insertPlainText(QString::fromLocal8Bit("Найдено ") + QString::number(_numJoysticks) + QString::fromLocal8Bit(" джойстиков:\n\n"));
+  _console->insertPlainText(QString::fromLocal8Bit("Найдено ") + 
+    QString::number(_numJoysticks) + QString::fromLocal8Bit(" джойстиков:\n\n"));
+
   for (int joyNum = 0; joyNum < _numJoysticks; joyNum++)
   {
     _joy = SDL_JoystickOpen(joyNum);
@@ -696,7 +703,9 @@ void ViewerWidget::testSDLJoystick()
     }
   }
   if (_numJoysticks == 0)
+  {
     _console->insertPlainText(QString::fromLocal8Bit("Не найден ни один джойстик\n"));
+  }
 }
 
 // event handling
@@ -759,15 +768,14 @@ bool ViewerWidget::event(QEvent* event)
 
     _keyboardEventHandler->SetDirections(_up, _down, _left, _right);
 
-    for (auto it = _vehicles.cbegin(); it != _vehicles.end(); ++it)
+    for (Vehicle* curVehicle : _vehicles)
     {
       // keyboard control devices handled in "keyboardEventHandler" class
-      if ((*it)->GetControlDevice() < 0)
-        continue;
+      if (curVehicle->GetControlDevice() < 0) continue;
 
-      (*it)->Stop();
+      curVehicle->Stop();
 
-      _joy = SDL_JoystickOpen((*it)->GetControlDevice());
+      _joy = SDL_JoystickOpen(curVehicle->GetControlDevice());
 
       SDL_JoystickUpdate();
 
@@ -776,20 +784,16 @@ bool ViewerWidget::event(QEvent* event)
       startBtn = SDL_JoystickGetButton(_joy, 9);
       fireBtn = SDL_JoystickGetButton(_joy, 2);
 
-      if (vAxis < -20000) // UP button
-        (*it)->SetMovingDirection(_up);
-
-      if (vAxis > 20000) // DOWN button
-        (*it)->SetMovingDirection(_down);
-
-      if (hAxis < -20000) // LEFT button
-        (*it)->SetMovingDirection(_left);
-
-      if (hAxis > 20000) // RIGHT button
-        (*it)->SetMovingDirection(_right);
-
-      if (fireBtn) // FIRE button
-        (*it)->Shoot();
+      // UP button
+      if (vAxis < -20000) curVehicle->SetMovingDirection(_up);
+      // DOWN button
+      if (vAxis > 20000) curVehicle->SetMovingDirection(_down);
+      // LEFT button
+      if (hAxis < -20000) curVehicle->SetMovingDirection(_left);
+      // RIGHT button
+      if (hAxis > 20000) curVehicle->SetMovingDirection(_right);
+      // FIRE button
+      if (fireBtn) curVehicle->Shoot();
     }
     return true;
   }
@@ -829,7 +833,9 @@ int main(int argc, char** argv)
 #if QT_VERSION >= 0x040800
   // Required for multithreaded QGLWidget on Linux/X11, see http://blog.qt.io/blog/2011/06/03/threaded-opengl-in-4-8/
   if (threadingModel != osgViewer::ViewerBase::SingleThreaded)
+  {
     QApplication::setAttribute(Qt::AA_X11InitThreads);
+  }
 #endif
 
   QApplication app(argc, argv);

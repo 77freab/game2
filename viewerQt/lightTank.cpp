@@ -4,12 +4,17 @@
 #include "lightTank.h"
 #include "projectile.h"
 
-LightTank::LightTank(int x, int z, int playerNum, int controlDevice,
-  std::vector<osg::ref_ptr<Vehicle>>& vehicles,
-  std::vector<std::vector<osg::ref_ptr<Tile>>>& tileMap,
-  std::list<osg::Node*>& toDelete,
-  ViewerWidget& ViewerWindow)
-  : Vehicle(x, z, 2, type::LIGHT, playerNum, controlDevice, vehicles, tileMap, toDelete, ViewerWindow)
+LightTank::LightTank( int x, 
+                      int z, 
+                      int playerNum, 
+                      int controlDevice,
+                      std::vector<osg::ref_ptr<Vehicle>>& vehicles,
+                      std::vector<std::vector<osg::ref_ptr<Tile>>>& tileMap,
+                      std::list<osg::Node*>& toDelete,
+                      ViewerWidget& ViewerWindow, 
+                      int killCount) : 
+  Vehicle(x, z, 2, type::LIGHT, playerNum, controlDevice, 
+  killCount, vehicles, tileMap, toDelete, ViewerWindow)
 {
   setDataVariance(osg::Object::DYNAMIC);
 
