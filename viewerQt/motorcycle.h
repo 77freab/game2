@@ -4,13 +4,12 @@
 
 const int MAX_NUM_BOMBS = 5;
 
-class motorcycle : public vehicle
+class Motorcycle : public Vehicle
 {
 public:
-  motorcycle(int x, int z, int playerNum, int controlDevice,
-    std::vector<osg::ref_ptr<vehicle>>& vehicles,
-    std::map<osg::Vec2i, blockType>& typeMap,
-    std::map<osg::Vec2i, osg::ref_ptr<osg::MatrixTransform>>& tileMap,
+  Motorcycle(int x, int z, int playerNum, int controlDevice,
+    std::vector<osg::ref_ptr<Vehicle>>& vehicles,
+    std::vector<std::vector<osg::ref_ptr<Tile>>>& tileMap,
     std::list<osg::Node*>& toDelete,
     ViewerWidget& ViewerWindow);
 
@@ -21,5 +20,5 @@ public:
   }
 
 private:
-  int _numBombs;
+  int _numBombs = 0;
 };

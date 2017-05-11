@@ -5,29 +5,28 @@
 #include "mapBuilder.h"
 #include "vehicle.h"
 
-class bombCallback;
+class BombCallback;
 class ViewerWidget;
 
-class bomb : public osg::MatrixTransform
+class Bomb : public osg::MatrixTransform
 {
 public:
-  bomb(int x, int y, int z, vehicle& parentVehicle, std::vector<osg::ref_ptr<vehicle>>& vehicles,
-    std::map<osg::Vec2i, blockType>& typeMap,
-    std::map<osg::Vec2i, osg::ref_ptr<osg::MatrixTransform>>& tileMap,
+  Bomb(int x, int y, int z, Vehicle& parentVehicle, 
+    std::vector<osg::ref_ptr<Vehicle>>& vehicles,
+    std::vector<std::vector<osg::ref_ptr<Tile>>>& tileMap,
     std::list<osg::Node*>& toDelete, ViewerWidget& ViewerWindow);
   void Explode();
 private:
   bool destroyTilesAt(int x, int z);
   void destroyVehiclesAt(int fromX, int toX, int fromZ, int toZ);
 
-  std::map<osg::Vec2i, blockType>* _typeMap;
-  std::map<osg::Vec2i, osg::ref_ptr<osg::MatrixTransform>>* _tileMap;
-  std::list<osg::Node*>* _toDelete;
-  std::vector<osg::ref_ptr<vehicle>>* _vehicles;
+  std::vector<std::vector<osg::ref_ptr<Tile>>>& _tileMap;
+  std::list<osg::Node*>& _toDelete;
+  std::vector<osg::ref_ptr<Vehicle>>& _vehicles;
   int _x;
   int _y;
   int _z;
-  osg::ref_ptr<bombCallback> _clb;
-  ViewerWidget* _ViewerWindow;
-  vehicle* _parentVehicle;
+  osg::ref_ptr<BombCallback> _clb;
+  ViewerWidget& _ViewerWindow;
+  Vehicle& _parentVehicle;
 };

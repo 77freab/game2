@@ -7,7 +7,7 @@
 #include "main.h"
 #include "projectile.h"
 
-class projectileCallback : public osg::NodeCallback
+class ProjectileCallback : public osg::NodeCallback
 {
 public:
   void operator()(osg::Node* nd, osg::NodeVisitor* ndv) override;
@@ -15,9 +15,9 @@ private:
   bool delay = false;
 };
 
-void projectileCallback::operator()(osg::Node* nd, osg::NodeVisitor* ndv)
+void ProjectileCallback::operator()(osg::Node* nd, osg::NodeVisitor* ndv)
 {
-  projectile* prj = dynamic_cast<projectile*>(nd);
+  Projectile* prj = dynamic_cast<Projectile*>(nd);
   if (!delay)
     prj->TryToMove();
   delay = !delay;
@@ -25,13 +25,14 @@ void projectileCallback::operator()(osg::Node* nd, osg::NodeVisitor* ndv)
 }
 
 // construcor
-projectile::projectile(int x, int y, int z, int speed, direction dir, vehicle& parentVehicle,
-  std::vector<osg::ref_ptr<vehicle>>& vehicles, std::map<osg::Vec2i, blockType>& typeMap,
-  std::map<osg::Vec2i, osg::ref_ptr<osg::MatrixTransform>>& tileMap,
+Projectile::Projectile(int x, int y, int z, 
+  int speed, direction dir, Vehicle& parentVehicle,
+  std::vector<osg::ref_ptr<Vehicle>>& vehicles,
+  std::vector<std::vector<osg::ref_ptr<Tile>>>& tileMap,
   std::list<osg::Node*>& toDelete, ViewerWidget& ViewerWindow)
-  : _dir(dir), _x(x), _y(y), _z(z), _speed(speed), _clb(new projectileCallback),
-  _parentVehicle(&parentVehicle), _vehicles(&vehicles), _typeMap(&typeMap), _tileMap(&tileMap),
-  _toDelete(&toDelete), _ViewerWindow(&ViewerWindow)
+  : _dir(dir), _x(x), _y(y), _z(z), _speed(speed), _clb(new ProjectileCallback),
+  _parentVehicle(parentVehicle), _vehicles(vehicles), _tileMap(tileMap),
+  _toDelete(toDelete), _ViewerWindow(ViewerWindow)
 {
   setDataVariance(osg::Object::DYNAMIC);
   setUpdateCallback(_clb);
@@ -128,84 +129,92 @@ projectile::projectile(int x, int y, int z, int speed, direction dir, vehicle& p
 }
 
 // calculating collisions
-void projectile::TryToMove()
+void Projectile::TryToMove()
 {
-  std::map<osg::Vec2i, blockType>::const_iterator a, b;
   bool aGo = false, bGo = false, projDel = false;
+  osg::ref_ptr<Tile>& curTile1 = _tileMap[_tileCollizionPt1[0]][_tileCollizionPt1[1]]; // current tile
 
-  if ((a = _typeMap->find(_tileCollizionPt1)) != _typeMap->end())
-    if ((*a).second == blockType::BRICK)
+  if (curTile1 != nullptr)
+  {
+    tileType curTileType = curTile1->GetType();
+    if (curTileType == tileType::BRICK)
     {
       // destroying tile
-      _toDelete->push_back((*_tileMap)[_tileCollizionPt1]);
-      _typeMap->erase(a);
+      _toDelete.push_back(curTile1);
+      curTile1 = nullptr;
       // need to destroy this projectile
       projDel = true;
     }
-    else if (((*a).second == blockType::ARMOR) || ((*a).second == blockType::BORDER))
+    else if ((curTileType == tileType::ARMOR) || (curTileType == tileType::BORDER))
     {
       // need to destroy this projectile
       projDel = true;
     }
     else
       aGo = true;
+  }
   else
     aGo = true;
 
-  if ((b = _typeMap->find(_tileCollizionPt2)) != _typeMap->end())
-    if ((*b).second == blockType::BRICK)
+  osg::ref_ptr<Tile>& curTile2 = _tileMap[_tileCollizionPt2[0]][_tileCollizionPt2[1]];
+  if (curTile2 != nullptr)
+  {
+    tileType curTileType = curTile2->GetType();
+    if (curTileType == tileType::BRICK)
     {
       // destroying tile
-      _toDelete->push_back((*_tileMap)[_tileCollizionPt2]);
-      _typeMap->erase(b);
+      _toDelete.push_back(curTile2);
+      curTile2 = nullptr;
       // need to destroy this projectile
       projDel = true;
     }
-    else if (((*b).second == blockType::ARMOR) || ((*b).second == blockType::BORDER))
+    else if ((curTileType == tileType::ARMOR) || (curTileType == tileType::BORDER))
     {
       // need to destroy this projectile
       projDel = true;
     }
     else
       bGo = true;
+  }
   else
     bGo = true;
 
   if (!projDel)
-    for (auto it = _vehicles->cbegin(); it != _vehicles->end(); ++it)
+    for (auto it = _vehicles.cbegin(); it != _vehicles.end(); ++it)
     {
-      osg::ref_ptr<vehicle> currentVehicle = *it;
-      if (currentVehicle.get() != _parentVehicle && currentVehicle->IsEnabled())
-        if (_z + 6 >= currentVehicle->GetZCoord() - 8 && _z + 2 <= currentVehicle->GetZCoord() + 8)
-          if (_x + 6 >= currentVehicle->GetXCoord() - 8 && _x + 2 <= currentVehicle->GetXCoord() + 8) // есть попадание
+      osg::ref_ptr<Vehicle> currentVehicle = *it;
+      int vehicleX = currentVehicle->GetXCoord();
+      int vehicleZ = currentVehicle->GetZCoord();
+
+      if (currentVehicle.get() != &_parentVehicle && currentVehicle->IsEnabled())
+        if (_z + 6 >= vehicleZ - 8 && _z + 2 <= vehicleZ + 8)
+          if (_x + 6 >= vehicleX - 8 && _x + 2 <= vehicleX + 8)
+            // projectile hit the vehicle
           {
-            if (currentVehicle->IsEnabled())
+            // need to destroy this projectile
+            projDel = true;
+            // if we hit front armor of heavy tank projectile can't pierce it
+            if (!(currentVehicle->GetType() == Vehicle::type::HEAVY &&
+              abs(static_cast<int>(currentVehicle->GetCurDir()) - static_cast<int>(_dir)) == 2))
             {
-              // need to destroy this projectile
-              projDel = true;
-              // if we hit front armor of heavy tank projectile can't pierce it
-              if (!(currentVehicle->GetType() == vehicle::type::HEAVY &&
-                abs(static_cast<int>(currentVehicle->GetCurDir()) - static_cast<int>(_dir)) == 2))
+              // creating explosion
+              Bang* bng = new Bang(vehicleX, 4, vehicleZ, _toDelete);
+              _parentVehicle.getParent(0)->addChild(bng);
+
+              // destroying vehicle
+              currentVehicle->Disable(); // disabe it
+              _toDelete.push_back(currentVehicle); // puting it to the queue for deleting from scene
+
+              // increase number of kills
+              QApplication::postEvent(&_ViewerWindow, new VehicleKilledSomebody
+                (_parentVehicle.GetPlayerNum(), _parentVehicle.AddKill()));
+
+              // after pause enemy will respawn
+              ViewerWidget* vw = &_ViewerWindow;
+              QTimer::singleShot(3000, vw, [currentVehicle, vw]
               {
-                // creating explosion
-                bang* bng = new bang(currentVehicle->GetXCoord(), 4, currentVehicle->GetZCoord(), *_toDelete);
-                _parentVehicle->getParent(0)->addChild(bng);
-
-                // destroying vehicle
-                currentVehicle->Disable(); // disabe it
-                _toDelete->push_back(currentVehicle); // puting it to the queue for deleting from scene
-
-                // increase number of kills
-                QApplication::postEvent(_ViewerWindow, new vehicleKilledSomebody
-                  (_parentVehicle->GetPlayerNum(), _parentVehicle->AddKill()));
-
-                // after pause enemy will respawn
-                ViewerWidget* vw = _ViewerWindow;
-                QTimer::singleShot(3000, vw, [currentVehicle, vw]
-                {
-                  QApplication::postEvent(vw, new vehicleNeedRespawn(currentVehicle.get()));
-                });
-              }
+                QApplication::postEvent(vw, new VehicleNeedRespawn(currentVehicle.get()));
+              });
             }
           }
     }
@@ -214,7 +223,7 @@ void projectile::TryToMove()
   {
     // destroying this projectile
     removeUpdateCallback(_clb);
-    _toDelete->push_back(this);
+    _toDelete.push_back(this);
   }
 
   if (aGo && bGo && !projDel)

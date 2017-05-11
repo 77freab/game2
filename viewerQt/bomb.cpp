@@ -10,7 +10,7 @@
 
 const int BOMB_BANG_DELAY = 100;
 
-class bombCallback : public osg::NodeCallback
+class BombCallback : public osg::NodeCallback
 {
 public:
   void operator()(osg::Node* nd, osg::NodeVisitor* ndv) override;
@@ -18,11 +18,11 @@ private:
   int _delay = 0;
 };
 
-void bombCallback::operator()(osg::Node* nd, osg::NodeVisitor* ndv)
+void BombCallback::operator()(osg::Node* nd, osg::NodeVisitor* ndv)
 {
   if (_delay == BOMB_BANG_DELAY)
   {
-    bomb* bmb = dynamic_cast<bomb*>(nd);
+    Bomb* bmb = dynamic_cast<Bomb*>(nd);
     bmb->Explode();
   }
   _delay++;
@@ -30,14 +30,14 @@ void bombCallback::operator()(osg::Node* nd, osg::NodeVisitor* ndv)
 }
 
 // constructor
-bomb::bomb(int x, int y, int z, vehicle& parentVehicle,
-  std::vector<osg::ref_ptr<vehicle>>& vehicles, std::map<osg::Vec2i, blockType>& typeMap,
-  std::map<osg::Vec2i, osg::ref_ptr<osg::MatrixTransform>>& tileMap,
+Bomb::Bomb(int x, int y, int z, Vehicle& parentVehicle,
+  std::vector<osg::ref_ptr<Vehicle>>& vehicles,
+  std::vector<std::vector<osg::ref_ptr<Tile>>>& tileMap,
   std::list<osg::Node*>& toDelete, ViewerWidget& ViewerWindow)
   //  : _x(qFloor(x / 16.) * 16 + 8), _y(y), _z(qFloor(z / 16.) * 16 + 8), 
   : _x(qFloor(x / 8.) * 8), _y(y), _z(qFloor(z / 8.) * 8),
-  _clb(new bombCallback), _vehicles(&vehicles), _typeMap(&typeMap), _tileMap(&tileMap),
-  _toDelete(&toDelete), _ViewerWindow(&ViewerWindow), _parentVehicle(&parentVehicle)
+  _clb(new BombCallback), _vehicles(vehicles), _tileMap(tileMap),
+  _toDelete(toDelete), _ViewerWindow(ViewerWindow), _parentVehicle(parentVehicle)
 {
   setUpdateCallback(_clb);
 
@@ -62,18 +62,18 @@ bomb::bomb(int x, int y, int z, vehicle& parentVehicle,
   addChild(node.get());
 }
 
-bool bomb::destroyTilesAt(int x, int z)
+bool Bomb::destroyTilesAt(int x, int z)
 {
-  std::map<osg::Vec2i, blockType>::const_iterator a;
+  Tile* curTile; // current tile
   bool stop = false;
 
   // if there is a tile on given coordinates
-  if ((a = _typeMap->find({ x, z })) != _typeMap->end())
-    if ((*a).second == blockType::BRICK)
+  if ((curTile = _tileMap[x][z]) != nullptr)
+    if (curTile->GetType() == tileType::BRICK)
     {
       // destroy this tile
-      _toDelete->push_back((*_tileMap)[{ x, z }]);
-      _typeMap->erase(a);
+      _toDelete.push_back(_tileMap[x][z]);
+      _tileMap[x][z] = nullptr;
       stop = true;
     }
     else
@@ -82,48 +82,46 @@ bool bomb::destroyTilesAt(int x, int z)
   return stop;
 }
 
-void bomb::destroyVehiclesAt(int fromX, int toX, int fromZ, int toZ)
+void Bomb::destroyVehiclesAt(int fromX, int toX, int fromZ, int toZ)
 {
   // cycle by all vihecles
-  for (auto it = _vehicles->cbegin(); it != _vehicles->end(); ++it)
+  for (auto it = _vehicles.cbegin(); it != _vehicles.end(); ++it)
   {
     int vehicleX = (*it)->GetXCoord();
     int vehicleZ = (*it)->GetZCoord();
     if (vehicleX > fromX && vehicleX < toX)
       if (vehicleZ > fromZ && vehicleZ < toZ)
       {
-        vehicle* attackedEnemy = (*it).get();
+        Vehicle* attackedEnemy = (*it).get();
 
         if (attackedEnemy->IsEnabled())
         {
           // creating explosion
-          bang* bng = new bang((*it)->GetXCoord(), -4, (*it)->GetZCoord(), *_toDelete);
+          Bang* bng = new Bang((*it)->GetXCoord(), -4, (*it)->GetZCoord(), _toDelete);
           getParent(0)->addChild(bng);
 
           // destroing vehicle
           attackedEnemy->Disable(); // disabling it
-          _toDelete->push_back(attackedEnemy); // puting it to the queue for deleting from scene
+          _toDelete.push_back(attackedEnemy); // puting it to the queue for deleting from scene
 
           // increase number of kills (suicide doesn't count)
-          if (_parentVehicle != attackedEnemy)
-            QApplication::postEvent(_ViewerWindow, new vehicleKilledSomebody
-              (_parentVehicle->GetPlayerNum(), _parentVehicle->AddKill()));
+          if (&_parentVehicle != attackedEnemy)
+            QApplication::postEvent(&_ViewerWindow, new VehicleKilledSomebody
+              (_parentVehicle.GetPlayerNum(), _parentVehicle.AddKill()));
 
           // after pause enemy will respawn
-          ViewerWidget* vw = _ViewerWindow;
+          ViewerWidget* vw = &_ViewerWindow;
           QTimer::singleShot(3000, vw, [attackedEnemy, vw]
           {
-            QApplication::postEvent(vw, new vehicleNeedRespawn(attackedEnemy));
+            QApplication::postEvent(vw, new VehicleNeedRespawn(attackedEnemy));
           });
         }
       }
   }
 }
 
-void bomb::Explode()
+void Bomb::Explode()
 {
-  std::map<osg::Vec2i, blockType>::const_iterator a;
-  bool stop = false;
   int bombX = _x / 8;
   int bombZ = _z / 8;
   int fromX, toX, fromZ, toZ;
@@ -134,7 +132,7 @@ void bomb::Explode()
   for (toZ = bombZ - 1; toZ < bombZ + 5; toZ++)
   {
     // creating explosion
-    bang* bng = new bang(_x, -3, toZ * 8, *_toDelete);
+    Bang* bng = new Bang(_x, -3, toZ * 8, _toDelete);
     getParent(0)->addChild(bng);
     // destroing tiles
     pr1 = destroyTilesAt(bombX - 1, toZ);
@@ -146,7 +144,7 @@ void bomb::Explode()
   for (fromZ = bombZ - 2; fromZ > bombZ - 6; fromZ--)
   {
     // creating explosion
-    bang* bng = new bang(_x, -3, fromZ * 8, *_toDelete);
+    Bang* bng = new Bang(_x, -3, fromZ * 8, _toDelete);
     getParent(0)->addChild(bng);
     // destroing tiles
     pr1 = destroyTilesAt(bombX - 1, fromZ);
@@ -160,7 +158,7 @@ void bomb::Explode()
   for (fromX = bombX - 2; fromX > bombX - 6; fromX--)
   {
     // creating explosion
-    bang* bng = new bang(fromX * 8, -3, _z, *_toDelete);
+    Bang* bng = new Bang(fromX * 8, -3, _z, _toDelete);
     getParent(0)->addChild(bng);
     // destroing tiles
     pr1 = destroyTilesAt(fromX, bombZ - 1);
@@ -172,7 +170,7 @@ void bomb::Explode()
   for (toX = bombX + 1; toX < bombX + 5; toX++)
   {
     // creating explosion
-    bang* bng = new bang(toX * 8, -3, _z, *_toDelete);
+    Bang* bng = new Bang(toX * 8, -3, _z, _toDelete);
     getParent(0)->addChild(bng);
     // destroing tiles
     pr1 = destroyTilesAt(toX, bombZ - 1);
@@ -185,6 +183,6 @@ void bomb::Explode()
 
   // destroing bomb
   removeUpdateCallback(_clb);
-  _toDelete->push_back(this);
-  dynamic_cast<motorcycle*>(_parentVehicle)->BombExploded();
+  _toDelete.push_back(this);
+  dynamic_cast<Motorcycle*>(&_parentVehicle)->BombExploded();
 }

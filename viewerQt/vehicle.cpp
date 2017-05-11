@@ -1,8 +1,8 @@
 #include "vehicle.h"
 
-void vehicleCallback::operator()(osg::Node* nd, osg::NodeVisitor* ndv)
+void VehicleCallback::operator()(osg::Node* nd, osg::NodeVisitor* ndv)
 {
-  vehicle* veh = dynamic_cast<vehicle*>(nd);
+  Vehicle* veh = dynamic_cast<Vehicle*>(nd);
   if (!delay)
     if (veh->NeedToGo())
       veh->Move();
@@ -10,23 +10,23 @@ void vehicleCallback::operator()(osg::Node* nd, osg::NodeVisitor* ndv)
   traverse(nd, ndv);
 }
 
-vehicle::vehicle(int x, int z, int speed, type startType, int playerNum, int controlDevice,
-  std::vector<osg::ref_ptr<vehicle>>& vehicles, 
-  std::map<osg::Vec2i, blockType>& typeMap, 
-  std::map<osg::Vec2i, osg::ref_ptr<osg::MatrixTransform>>& tileMap, 
+Vehicle::Vehicle(int x, int z, int speed, 
+  type startType, int playerNum, int controlDevice,
+  std::vector<osg::ref_ptr<Vehicle>>& vehicles, 
+  std::vector<std::vector<osg::ref_ptr<Tile>>>& tileMap,
   std::list<osg::Node*>& toDelete, 
   ViewerWidget& ViewerWindow)
-  : _shotDelayTimer(new QDeadlineTimer(-1)), _rMt(new MatrixTransform), _speed(speed),
-  _typeMap(&typeMap), _tileMap(&tileMap), _toDelete(&toDelete), _vehicles(&vehicles),
-  _controlDevice(controlDevice), _player(playerNum), _x(x), _z(z), _ViewerWindow(&ViewerWindow),
-  _currentType(startType)
+  : _shotDelayTimer(new QDeadlineTimer(-1)), _rMt(new MatrixTransform), 
+  _speed(speed), _tileMap(tileMap), _toDelete(toDelete), 
+  _vehicles(vehicles), _controlDevice(controlDevice), _player(playerNum), 
+  _x(x), _z(z), _ViewerWindow(ViewerWindow), _currentType(startType)
 {
   // additional MatrixTransform for rotating a vehicle
   addChild(_rMt.get());
 }
 
 // calculating collisions and moving
-void vehicle::Move()
+void Vehicle::Move()
 {
   // calculating collision points depending on current vehicle direction
   osg::Vec2i vehicleCollizionPt1, vehicleCollizionPt2;
@@ -67,30 +67,34 @@ void vehicle::Move()
   }
   }
 
-  std::map<osg::Vec2i, blockType>::const_iterator a, b;
   bool aGo = false, bGo = false, vStop = false;
+  const osg::ref_ptr<Tile>& curTile1 = _tileMap[tileCollizionPt1[0]][tileCollizionPt1[1]]; // current tile
 
   // checking collisions with tiles
-  if ((a = _typeMap->find(tileCollizionPt1)) != _typeMap->end())
+  if (curTile1 != nullptr)
   {
-    if ((*a).second == blockType::ICE)
+    tileType curTileType = curTile1->GetType();
+    if (curTileType == tileType::ICE)
     {
       aGo = true;
       // ICE !!!!!!!!!!!!!
     }
-    if ((*a).second == blockType::BUSHES)
+    if (curTileType == tileType::BUSHES)
       aGo = true;
   }
   else
     aGo = true;
-  if ((b = _typeMap->find(tileCollizionPt2)) != _typeMap->end())
+
+  const osg::ref_ptr<Tile>& curTile2 = _tileMap[tileCollizionPt2[0]][tileCollizionPt2[1]];
+  if (curTile2 != nullptr)
   {
-    if ((*b).second == blockType::ICE)
+    tileType curTileType = curTile2->GetType();
+    if (curTileType == tileType::ICE)
     {
       bGo = true;
       // ICE !!!!!!!!!!!!!
     }
-    if ((*b).second == blockType::BUSHES)
+    if (curTileType == tileType::BUSHES)
       bGo = true;
   }
   else
@@ -100,7 +104,7 @@ void vehicle::Move()
   if (aGo && bGo)
   {
     // cycle on all vehicles
-    for (auto it = _vehicles->cbegin(); it != _vehicles->end(); ++it)
+    for (auto it = _vehicles.cbegin(); it != _vehicles.end(); ++it)
     {
       if ((*it).get() != this && (*it)->_enabled)
       {
@@ -184,15 +188,15 @@ void vehicle::Move()
   setMatrix(mT);
 }
 
-void vehicle::Enable()
+void Vehicle::Enable()
 {
-  _clb = new vehicleCallback;
+  _clb = new VehicleCallback;
   setUpdateCallback(_clb);
   _shotDelayTimer->setRemainingTime(SHOT_TIMEOUT);
   _enabled = true;
 }
 
-void vehicle::Disable()
+void Vehicle::Disable()
 {
   removeUpdateCallback(_clb); // vehicle can not move
   _clb = nullptr; // deleting callback

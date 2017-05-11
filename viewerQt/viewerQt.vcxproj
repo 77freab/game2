@@ -85,6 +85,7 @@
     <ClInclude Include="lightTank.h" />
     <ClInclude Include="motorcycle.h" />
     <ClInclude Include="projectile.h" />
+    <ClInclude Include="Tile.h" />
     <ClInclude Include="vehicle.h" />
     <ClInclude Include="main.h" />
     <ClInclude Include="mapBuilder.h" />

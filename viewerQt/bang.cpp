@@ -4,25 +4,25 @@
 #include <osg/Geometry>
 #include <osgDB/ReadFile>
 
-class bangCallback : public osg::NodeCallback
+class BangCallback : public osg::NodeCallback
 {
 public:
   void operator()(osg::Node* nd, osg::NodeVisitor* ndv) override;
 };
 
-void bangCallback::operator()(osg::Node* nd, osg::NodeVisitor* ndv)
+void BangCallback::operator()(osg::Node* nd, osg::NodeVisitor* ndv)
 {
-  bang* bng = dynamic_cast<bang*>(nd);
+  Bang* bng = dynamic_cast<Bang*>(nd);
   bng->AnimateBang();
   traverse(nd, ndv);
 }
 
 // constructor
-bang::bang(int x, int y, int z, std::list<osg::Node*>& toDelete)
+Bang::Bang(int x, int y, int z, std::list<osg::Node*>& toDelete)
   : _geode(new osg::Geode), _normals(new osg::Vec3Array), _geom(new osg::Geometry),
   _vertices(new osg::Vec3Array), _color(new osg::Vec4Array), _texCoord(new osg::Vec2Array),
   _texture(new osg::Texture2D), _image(osgDB::readImageFile("./Resources/bang.png")),
-  _toDelete(&toDelete), _clb(new bangCallback)
+  _toDelete(toDelete), _clb(new BangCallback)
 {
   setDataVariance(osg::Object::DYNAMIC);
   setUpdateCallback(_clb);
@@ -68,7 +68,7 @@ bang::bang(int x, int y, int z, std::list<osg::Node*>& toDelete)
 }
 
 // texture of explosion changing with time and complitely dissapeare at the end
-void bang::AnimateBang()
+void Bang::AnimateBang()
 {
   int temp = 10;
   _roughTimer++;
@@ -96,7 +96,7 @@ void bang::AnimateBang()
   }
   if (_roughTimer == temp * 3)
   {
-    _toDelete->push_back(this);
+    _toDelete.push_back(this);
     removeUpdateCallback(_clb);
   }
 }

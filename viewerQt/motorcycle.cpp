@@ -4,13 +4,12 @@
 #include "bomb.h"
 #include "motorcycle.h"
 
-motorcycle::motorcycle(int x, int z, int playerNum, int controlDevice,
-  std::vector<osg::ref_ptr<vehicle>>& vehicles,
-  std::map<osg::Vec2i, blockType>& typeMap,
-  std::map<osg::Vec2i, osg::ref_ptr<osg::MatrixTransform>>& tileMap,
+Motorcycle::Motorcycle(int x, int z, int playerNum, int controlDevice,
+  std::vector<osg::ref_ptr<Vehicle>>& vehicles,
+  std::vector<std::vector<osg::ref_ptr<Tile>>>& tileMap,
   std::list<osg::Node*>& toDelete,
   ViewerWidget& ViewerWindow)
-  : vehicle(x, z, 3, type::MOTO, playerNum, controlDevice, vehicles, typeMap, tileMap, toDelete, ViewerWindow)
+  : Vehicle(x, z, 3, type::MOTO, playerNum, controlDevice, vehicles, tileMap, toDelete, ViewerWindow)
 {
   setDataVariance(osg::Object::DYNAMIC);
 
@@ -36,14 +35,14 @@ motorcycle::motorcycle(int x, int z, int playerNum, int controlDevice,
 }
 
 // shooting
-void motorcycle::Shoot()
+void Motorcycle::Shoot()
 {
   // checking for delay in shooting
   if (getShotDelayTimer()->hasExpired() && _numBombs < MAX_NUM_BOMBS)
   {
     _numBombs++;
-    osg::ref_ptr<bomb> droppedBomb = new bomb(GetXCoord(), -4, GetZCoord(), 
-      *this, *_vehicles, *_typeMap, *_tileMap, *_toDelete, *_ViewerWindow);
+    osg::ref_ptr<Bomb> droppedBomb = new Bomb(GetXCoord(), -4, GetZCoord(), 
+      *this, _vehicles, _tileMap, _toDelete, _ViewerWindow);
     getParent(0)->addChild(droppedBomb.get());
     droppedBomb->setName(getName() + " - bomb");
     // updating the delay timer

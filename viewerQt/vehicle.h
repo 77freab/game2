@@ -19,7 +19,7 @@ enum class direction
 
 class ViewerWidget;
 
-class vehicleCallback : public osg::NodeCallback
+class VehicleCallback : public osg::NodeCallback
 {
 public:
   void operator()(osg::Node*, osg::NodeVisitor*) override;
@@ -27,7 +27,7 @@ private:
   bool delay = false;
 };
 
-class vehicle : public osg::MatrixTransform
+class Vehicle : public osg::MatrixTransform
 {
 public:
   enum class type
@@ -58,22 +58,20 @@ public:
   inline const type GetType() const;
 
 protected:
-  vehicle();
-  vehicle(int x, int z, int speed, type startType, int playerNum, int controlDevice,
-    std::vector<osg::ref_ptr<vehicle>>& vehicles,
-    std::map<osg::Vec2i, blockType>& typeMap,
-    std::map<osg::Vec2i, osg::ref_ptr<osg::MatrixTransform>>& tileMap,
+  Vehicle();
+  Vehicle(int x, int z, int speed, type startType, int playerNum, int controlDevice,
+    std::vector<osg::ref_ptr<Vehicle>>& vehicles,
+    std::vector<std::vector<osg::ref_ptr<Tile>>>& tileMap,
     std::list<osg::Node*>& toDelete,
     ViewerWidget& ViewerWindow);
 
   inline osg::MatrixTransform* getRotateMT() const;
   inline QDeadlineTimer* getShotDelayTimer() const;
 
-  std::map<osg::Vec2i, blockType>* _typeMap;
-  std::map<osg::Vec2i, osg::ref_ptr<osg::MatrixTransform>>* _tileMap;
-  std::list<osg::Node*>* _toDelete;
-  std::vector<osg::ref_ptr<vehicle>>* _vehicles;
-  ViewerWidget* _ViewerWindow;
+  std::vector<std::vector<osg::ref_ptr<Tile>>>& _tileMap;
+  std::list<osg::Node*>& _toDelete;
+  std::vector<osg::ref_ptr<Vehicle>>& _vehicles;
+  ViewerWidget& _ViewerWindow;
 
 private:
   int _speed;
@@ -86,88 +84,88 @@ private:
   int _killCount = 0;
   bool _enabled = false;
   int _player;
-  osg::ref_ptr<vehicleCallback> _clb;
+  osg::ref_ptr<VehicleCallback> _clb;
   osg::ref_ptr<osg::MatrixTransform> _rMt;
   direction _goDir = direction::UP;
   direction _curDir = direction::UP;
 };
 
-inline void vehicle::SetMovingDirection(direction dir)
+inline void Vehicle::SetMovingDirection(direction dir)
 {
   _go = true;
   _goDir = dir;
 }
 
-inline void vehicle::Stop()
+inline void Vehicle::Stop()
 {
   _go = false;
 }
 
-inline const bool vehicle::IsEnabled() const
+inline const bool Vehicle::IsEnabled() const
 {
   return _enabled;
 }
 
-inline const direction vehicle::GetCurDir() const
+inline const direction Vehicle::GetCurDir() const
 {
   return _curDir;
 }
 
-inline const bool vehicle::NeedToGo() const
+inline const bool Vehicle::NeedToGo() const
 {
   return _go;
 }
 
-inline const int vehicle::GetControlDevice() const
+inline const int Vehicle::GetControlDevice() const
 {
   return _controlDevice;
 }
 
-inline void vehicle::SetControlDevice(int cd)
+inline void Vehicle::SetControlDevice(int cd)
 {
   _controlDevice = cd;
 }
 
-inline void vehicle::SetXCoord(int x)
+inline void Vehicle::SetXCoord(int x)
 {
   _x = x;
 }
 
-inline void vehicle::SetZCoord(int z)
+inline void Vehicle::SetZCoord(int z)
 {
   _z = z;
 }
 
-inline const int vehicle::GetXCoord() const
+inline const int Vehicle::GetXCoord() const
 {
   return _x;
 }
 
-inline const int vehicle::GetZCoord() const
+inline const int Vehicle::GetZCoord() const
 {
   return _z;
 }
 
-inline const int vehicle::AddKill()
+inline const int Vehicle::AddKill()
 {
   return ++_killCount;
 }
 
-inline const int vehicle::GetPlayerNum() const
+inline const int Vehicle::GetPlayerNum() const
 {
   return _player;
 }
 
-inline const vehicle::type vehicle::GetType() const
+inline const Vehicle::type Vehicle::GetType() const
 {
   return _currentType;
 }
 
-inline osg::MatrixTransform* vehicle::getRotateMT() const
+inline osg::MatrixTransform* Vehicle::getRotateMT() const
 {
   return _rMt.get();
 }
-inline QDeadlineTimer* vehicle::getShotDelayTimer() const
+inline QDeadlineTimer* Vehicle::getShotDelayTimer() const
 {
   return _shotDelayTimer;
 }

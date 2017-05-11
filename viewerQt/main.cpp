@@ -18,36 +18,36 @@ const QEvent::Type VEHICLE_KILLED_SOMEBODY_EVENT = static_cast<QEvent::Type>(QEv
 const QEvent::Type VEHICLE_NEED_RESPAWN_EVENT = static_cast<QEvent::Type>(QEvent::User + 2);
 
 // custom event for updating killcount
-vehicleKilledSomebody::vehicleKilledSomebody(const int player, const int killCount)
+VehicleKilledSomebody::VehicleKilledSomebody(const int player, const int killCount)
   : QEvent(VEHICLE_KILLED_SOMEBODY_EVENT), _killCount(killCount), _player(player)
 {  }
 
-int vehicleKilledSomebody::GetKillCount() const
+int VehicleKilledSomebody::GetKillCount() const
 {
   return _killCount;
 }
 
-int vehicleKilledSomebody::GetPlayer() const
+int VehicleKilledSomebody::GetPlayer() const
 {
   return _player;
 }
 // end
 
 // custom event for player respawn
-vehicleNeedRespawn::vehicleNeedRespawn(const osg::ref_ptr<vehicle> vehicle)
+VehicleNeedRespawn::VehicleNeedRespawn(const osg::ref_ptr<Vehicle> vehicle)
   : QEvent(VEHICLE_NEED_RESPAWN_EVENT), _vehicle(vehicle)
 {  }
 
-osg::ref_ptr<vehicle> vehicleNeedRespawn::GetVehicle() const
+osg::ref_ptr<Vehicle> VehicleNeedRespawn::GetVehicle() const
 {
   return _vehicle;
 }
 // end
 
-class keyboardEventHandler : public osgGA::GUIEventHandler
+class KeyboardEventHandler : public osgGA::GUIEventHandler
 {
 public:
-  keyboardEventHandler()
+  KeyboardEventHandler()
   {
     _up = direction::UP;
     _down = direction::DOWN;
@@ -184,11 +184,11 @@ public:
       return false;
     }
   }
-  void SetWasdVehicle(vehicle* vehicle)
+  void SetWasdVehicle(Vehicle* vehicle)
   {
     _wasdVehicle = vehicle;
   }
-  void SetArrowsVehicle(vehicle* vehicle)
+  void SetArrowsVehicle(Vehicle* vehicle)
   {
     _arrowsVehicle = vehicle;
   }
@@ -200,8 +200,8 @@ public:
     _right = right;
   }
 private:
-  vehicle* _wasdVehicle = nullptr; // pointer to vehicle controlled by WASD
-  vehicle* _arrowsVehicle = nullptr; // pointer to vehicle controlled by arrows
+  Vehicle* _wasdVehicle = nullptr; // pointer to vehicle controlled by WASD
+  Vehicle* _arrowsVehicle = nullptr; // pointer to vehicle controlled by arrows
   std::map<int, bool> _pressedKeys; // determine if there are held keyboard keys in current moment
   direction _up, _down, _left, _right; // direction for vehicles depending on camera positon
 };
@@ -209,7 +209,7 @@ private:
 // main window - constructor
 ViewerWidget::ViewerWidget(QWidget* parent, Qt::WindowFlags f,
   osgViewer::ViewerBase::ThreadingModel threadingModel)
-  : QWidget(parent, f), _viewer(new osgViewer::Viewer), _keyboardEventHandler(new keyboardEventHandler)
+  : QWidget(parent, f), _viewer(new osgViewer::Viewer), _keyboardEventHandler(new KeyboardEventHandler)
 {
   srand(time(NULL));
   _viewer->setThreadingModel(threadingModel);
@@ -362,8 +362,8 @@ void ViewerWidget::addPlayer()
       }
       if (pr)
       {
-        _vehicles.push_back(new lightTank(0, 0, player, freeControl,
-          _vehicles, _typeMap, _tileMap, _toDelete, *this));
+        _vehicles.push_back(new LightTank(0, 0, player, freeControl,
+          _vehicles, _tileMap, _toDelete, *this));
         break;
       }
     }
@@ -384,7 +384,7 @@ void ViewerWidget::addPlayer()
     connect(act, &QAction::triggered, vehicleTypeBtn, [vehicleTypeBtn, act] { vehicleTypeBtn->setText(act->text()); });
     connect(act, &QAction::triggered, this, [this, player] 
     { 
-      if (_vehicles[player]->GetType() != vehicle::type::LIGHT)
+      if (_vehicles[player]->GetType() != Vehicle::type::LIGHT)
       {
         int controlDevice = _vehicles[player]->GetControlDevice();
         _vehicles[player]->Disable();
@@ -392,8 +392,8 @@ void ViewerWidget::addPlayer()
         if (_vehicles[player]->getNumParents() != 0)
           _vehicles[player]->getParent(0)->removeChild(_vehicles[player]);
 
-        _vehicles[player] = new lightTank(0, 0, player, controlDevice,
-          _vehicles, _typeMap, _tileMap, _toDelete, *this);
+        _vehicles[player] = new LightTank(0, 0, player, controlDevice,
+          _vehicles, _tileMap, _toDelete, *this);
 
         if (controlDevice == -2)
           _keyboardEventHandler->SetWasdVehicle(_vehicles[player]);
@@ -411,7 +411,7 @@ void ViewerWidget::addPlayer()
     connect(act, &QAction::triggered, vehicleTypeBtn, [vehicleTypeBtn, act] { vehicleTypeBtn->setText(act->text()); });
     connect(act, &QAction::triggered, this, [this, player] 
     { 
-      if (_vehicles[player]->GetType() != vehicle::type::HEAVY)
+      if (_vehicles[player]->GetType() != Vehicle::type::HEAVY)
       {
         int controlDevice = _vehicles[player]->GetControlDevice();
         _vehicles[player]->Disable();
@@ -419,8 +419,8 @@ void ViewerWidget::addPlayer()
         if (_vehicles[player]->getNumParents() != 0)
           _vehicles[player]->getParent(0)->removeChild(_vehicles[player]);
 
-        _vehicles[player] = new heavyTank(0, 0, player, controlDevice,
-          _vehicles, _typeMap, _tileMap, _toDelete, *this);
+        _vehicles[player] = new HeavyTank(0, 0, player, controlDevice,
+          _vehicles, _tileMap, _toDelete, *this);
 
         if (controlDevice == -2)
           _keyboardEventHandler->SetWasdVehicle(_vehicles[player]);
@@ -438,7 +438,7 @@ void ViewerWidget::addPlayer()
     connect(act, &QAction::triggered, vehicleTypeBtn, [vehicleTypeBtn, act] { vehicleTypeBtn->setText(act->text()); });
     connect(act, &QAction::triggered, this, [this, player]
     {
-      if (_vehicles[player]->GetType() != vehicle::type::MOTO)
+      if (_vehicles[player]->GetType() != Vehicle::type::MOTO)
       {
         int controlDevice = _vehicles[player]->GetControlDevice();
         _vehicles[player]->Disable();
@@ -446,8 +446,8 @@ void ViewerWidget::addPlayer()
         if (_vehicles[player]->getNumParents() != 0)
           _vehicles[player]->getParent(0)->removeChild(_vehicles[player]);
 
-        _vehicles[player] = new motorcycle(0, 0, player, controlDevice,
-          _vehicles, _typeMap, _tileMap, _toDelete, *this);
+        _vehicles[player] = new Motorcycle(0, 0, player, controlDevice,
+          _vehicles, _tileMap, _toDelete, *this);
 
         if (controlDevice == -2)
           _keyboardEventHandler->SetWasdVehicle(_vehicles[player]);
@@ -523,31 +523,30 @@ void ViewerWidget::addPlayer()
 // remove tiles on vehicle spawn point if there are any
 void ViewerWidget::clearPlaceForVehicle(int x, int z)
 {
-  std::map<osg::Vec2i, blockType>::const_iterator a;
-  if ((a = _typeMap.find({ x - 1, z })) != _typeMap.end())
+  if (_tileMap[x - 1][z] != nullptr)
   {
-    _toDelete.push_back(_tileMap[{ x - 1, z }]);
-    _typeMap.erase(a);
+    _toDelete.push_back(_tileMap[x - 1][z]);
+    _tileMap[x - 1][z] = nullptr;
   }
-  if ((a = _typeMap.find({ x, z - 1 })) != _typeMap.end())
+  if (_tileMap[x][z - 1] != nullptr)
   {
-    _toDelete.push_back(_tileMap[{ x, z - 1 }]);
-    _typeMap.erase(a);
+    _toDelete.push_back(_tileMap[x][z - 1]);
+    _tileMap[x][z - 1] = nullptr;
   }
-  if ((a = _typeMap.find({ x - 1, z - 1 })) != _typeMap.end())
+  if (_tileMap[x - 1][z - 1] != nullptr)
   {
-    _toDelete.push_back(_tileMap[{ x - 1, z - 1 }]);
-    _typeMap.erase(a);
+    _toDelete.push_back(_tileMap[x - 1][z - 1]);
+    _tileMap[x - 1][z - 1] = nullptr;
   }
-  if ((a = _typeMap.find({ x, z })) != _typeMap.end())
+  if (_tileMap[x][z] != nullptr)
   {
-    _toDelete.push_back(_tileMap[{ x, z }]);
-    _typeMap.erase(a);
+    _toDelete.push_back(_tileMap[x][z]);
+    _tileMap[x][z] = nullptr;
   }
 }
 
 // place vehicle on game area
-void ViewerWidget::spawnPlayer(osg::ref_ptr<vehicle> vehicle)
+void ViewerWidget::spawnPlayer(osg::ref_ptr<Vehicle> vehicle)
 {
   int x = rand() % (_mapSize[0] - 8) + 3;
   int z = rand() % (_mapSize[1] - 6) + 3;
@@ -608,7 +607,7 @@ osg::ref_ptr<osg::Node> ViewerWidget::createScene()
   osg::ref_ptr<osg::Group> scene = new osg::Group;
   scene->setName("main scene");
   int returnCode;
-  if ((returnCode = mapMaker.CreateMap(scene, _typeMap, _tileMap, _fileName, _mapSize)) == -2)
+  if ((returnCode = mapMaker.CreateMap(scene, _tileMap, _fileName, _mapSize)) == -2)
   {
     QMessageBox::warning(this, "file error",
       QString::fromLocal8Bit("Кривой файл"), QMessageBox::Ok);
@@ -797,7 +796,7 @@ bool ViewerWidget::event(QEvent* event)
   else if (event->type() == VEHICLE_KILLED_SOMEBODY_EVENT)
   {
     // updating killcount
-    vehicleKilledSomebody* ev = static_cast<vehicleKilledSomebody *>(event);
+    VehicleKilledSomebody* ev = static_cast<VehicleKilledSomebody *>(event);
     _playersList->topLevelItem(ev->GetPlayer())->setText(1,
       QString::number(ev->GetKillCount()));
     return true;
@@ -805,7 +804,7 @@ bool ViewerWidget::event(QEvent* event)
   else if (event->type() == VEHICLE_NEED_RESPAWN_EVENT)
   {
     // spawning destroyed vehicle
-    spawnPlayer(static_cast<vehicleNeedRespawn *>(event)->GetVehicle());
+    spawnPlayer(static_cast<VehicleNeedRespawn *>(event)->GetVehicle());
     return true;
   }
   return QWidget::event(event);

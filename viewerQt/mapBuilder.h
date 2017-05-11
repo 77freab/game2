@@ -1,33 +1,21 @@
 #pragma once
 
 #include <string>
-
 #include <QXmlStreamReader>
-
 #include <osg/MatrixTransform>
+#include "Tile.h"
 
-enum class blockType
-{
-  BORDER = 0,
-  BRICK = 1,
-  ARMOR = 2,
-  WATER = 3,
-  BUSHES = 4,
-  ICE = 5
-};
-
-class mapBuilder
+class MapBuilder
 {
 public:
-  mapBuilder();
-  osg::ref_ptr<osg::MatrixTransform> GetTile(int x, int y, int z, blockType bt, bool pr = false);
+  MapBuilder();
   int CreateMap(osg::ref_ptr<osg::Group> scene, 
-    std::map<osg::Vec2i, blockType>& typeMap,
-    std::map<osg::Vec2i, osg::ref_ptr<osg::MatrixTransform>>& tileMap, 
+    std::vector<std::vector<osg::ref_ptr<Tile>>>& tileMap,
     QString fileName, osg::Vec2i& mapSize);
 private:
+  osg::ref_ptr<Tile> getTile(int x, int y, int z, tileType bt);
   void skipUnknownElement(QXmlStreamReader& reader);
-  osg::ref_ptr<osg::Geode> makeNewTile(blockType bt, bool pr);
+  osg::ref_ptr<osg::Geode> makeNewTile(tileType bt, tileStyle ts);
 
   std::vector<osg::ref_ptr<osg::Geode>> _tiles;
   std::vector<std::string> _blockTex;

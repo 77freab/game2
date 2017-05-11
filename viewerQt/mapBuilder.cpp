@@ -7,7 +7,7 @@
 
 #include "mapBuilder.h"
 
-osg::ref_ptr<osg::Geode> mapBuilder::makeNewTile(blockType bt, bool pr)
+osg::ref_ptr<osg::Geode> MapBuilder::makeNewTile(tileType bt, tileStyle ts)
 {
   // color
   osg::ref_ptr<osg::Vec4Array> color = new osg::Vec4Array;
@@ -20,7 +20,7 @@ osg::ref_ptr<osg::Geode> mapBuilder::makeNewTile(blockType bt, bool pr)
   osg::ref_ptr<osg::Vec2Array> texCoord = new osg::Vec2Array;
 
   // if tile is flat (water, ice)
-  if (pr)
+  if (ts == tileStyle::FLAT)
   {
     // vertices
     geom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::QUADS, 0, 4));
@@ -129,22 +129,27 @@ osg::ref_ptr<osg::Geode> mapBuilder::makeNewTile(blockType bt, bool pr)
   return geode;
 }
 
-osg::ref_ptr<osg::MatrixTransform> mapBuilder::GetTile(int x, int y, int z, blockType bt, bool pr)
+osg::ref_ptr<Tile> MapBuilder::getTile(int x, int y, int z, tileType bt)
 {
-  osg::ref_ptr<osg::MatrixTransform> mt = new osg::MatrixTransform;
+  osg::ref_ptr<Tile> tile = new Tile(bt);
   osg::Matrix m;
   m.makeTranslate(x, y, z);
-  mt->setMatrix(m);
+  tile->setMatrix(m);
 
   if (_tiles[static_cast<int>(bt)] == nullptr)
-    makeNewTile(bt, pr);
+  {
+    tileStyle ts = tileStyle::VOLUMETRIC;
+    if (bt == tileType::WATER || bt == tileType::ICE)
+      ts = tileStyle::FLAT;
+    makeNewTile(bt, ts);
+  }
 
-  mt->addChild(_tiles[static_cast<int>(bt)]);
+  tile->addChild(_tiles[static_cast<int>(bt)]);
 
-  return mt;
+  return tile;
 }
 
-mapBuilder::mapBuilder()
+MapBuilder::MapBuilder()
 {
   _blockTex.push_back("./Resources/blocks/BORDER.png");
   _blockTex.push_back("./Resources/blocks/BRICK.png");
@@ -154,7 +159,7 @@ mapBuilder::mapBuilder()
   _blockTex.push_back("./Resources/blocks/ICE.png");
 }
 
-void mapBuilder::skipUnknownElement(QXmlStreamReader& reader)
+void MapBuilder::skipUnknownElement(QXmlStreamReader& reader)
 {
   reader.readNext();
   while (!reader.atEnd())
@@ -182,9 +187,8 @@ void mapBuilder::skipUnknownElement(QXmlStreamReader& reader)
   }
 }
 
-int mapBuilder::CreateMap(osg::ref_ptr<osg::Group> scene,
-  std::map<osg::Vec2i, blockType>& typeMap,
-  std::map<osg::Vec2i, osg::ref_ptr<osg::MatrixTransform>>& tileMap, 
+int MapBuilder::CreateMap(osg::ref_ptr<osg::Group> scene,
+  std::vector<std::vector<osg::ref_ptr<Tile>>>& tileMap,
   QString fileName, osg::Vec2i& mapSize)
 {
   _tiles.clear();
@@ -206,7 +210,6 @@ int mapBuilder::CreateMap(osg::ref_ptr<osg::Group> scene,
       if (reader.name() == "map")
       {
         // reading map
-        typeMap.clear();
         tileMap.clear();
         reader.readNext();
         while (!reader.atEnd())
@@ -228,21 +231,24 @@ int mapBuilder::CreateMap(osg::ref_ptr<osg::Group> scene,
             else if (reader.name() == "sizeZ")
             {
               mapSize[1] = (reader.readElementText().toInt() + 32) / 8;
+              tileMap.resize(mapSize[0]);
+              for (int x = 0; x < mapSize[0]; x++)
+                tileMap[x].resize(mapSize[1], nullptr);
             }
             else if (reader.name() == "tile")
             {
-              blockType type;
+              tileType type;
               int x, z;
               QString attrStr = reader.attributes()[0].name().toString();
               if (attrStr == "type")
               {
                 QString attrValue = reader.attributes()[0].value().toString();
-                if (attrValue == "BORDER") type = blockType::BORDER;
-                else if (attrValue == "BRICK") type = blockType::BRICK;
-                else if (attrValue == "ARMOR") type = blockType::ARMOR;
-                else if (attrValue == "WATER") type = blockType::WATER;
-                else if (attrValue == "BUSHES") type = blockType::BUSHES;
-                else if (attrValue == "ICE") type = blockType::ICE;
+                if (attrValue == "BORDER") type = tileType::BORDER;
+                else if (attrValue == "BRICK") type = tileType::BRICK;
+                else if (attrValue == "ARMOR") type = tileType::ARMOR;
+                else if (attrValue == "WATER") type = tileType::WATER;
+                else if (attrValue == "BUSHES") type = tileType::BUSHES;
+                else if (attrValue == "ICE") type = tileType::ICE;
               }
               reader.readNext();
               while (!reader.atEnd())
@@ -277,7 +283,8 @@ int mapBuilder::CreateMap(osg::ref_ptr<osg::Group> scene,
                   reader.readNext();
                 }
               }
-              typeMap[{x, z}] = type;
+              tileMap[x][z] = getTile(x * 8, 0, z * 8, type);
+              scene->addChild(tileMap[x][z]);
             }
             else
             {
@@ -302,16 +309,16 @@ int mapBuilder::CreateMap(osg::ref_ptr<osg::Group> scene,
   }
   file.close();
 
-  std::map<osg::Vec2i, blockType>::const_iterator it;
-  for (int x = 0; x < mapSize[0]; x++)
-    for (int z = 0; z < mapSize[1]; z++)
-      if ((it = typeMap.find({ x, z })) != typeMap.end())
-      {
-        if ((*it).second == blockType::WATER || (*it).second == blockType::ICE)
-          tileMap[{ x, z }] = GetTile(x * 8, 0, z * 8, (*it).second, true);
-        else
-          tileMap[{ x, z }] = GetTile(x * 8, 0, z * 8, (*it).second);
-        scene->addChild(tileMap[{ x, z }]);
-      }
+  //std::map<osg::Vec2i, tileType>::const_iterator it;
+  //for (int x = 0; x < mapSize[0]; x++)
+  //  for (int z = 0; z < mapSize[1]; z++)
+  //    if ((it = typeMap.find({ x, z })) != typeMap.end())
+  //    {
+  //      if ((*it).second == tileType::WATER || (*it).second == tileType::ICE)
+  //        tileMap[{ x, z }] = getTile(x * 8, 0, z * 8, (*it).second, tileStyle::FLAT);
+  //      else
+  //        tileMap[{ x, z }] = getTile(x * 8, 0, z * 8, (*it).second);
+  //      scene->addChild(tileMap[{ x, z }]);
+  //    }
   return 0;
 }

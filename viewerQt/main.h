@@ -18,13 +18,13 @@
 #include "heavyTank.h"
 #include "motorcycle.h"
 
-class keyboardEventHandler;
+class KeyboardEventHandler;
 
 // custom event for updating killcount
-class vehicleKilledSomebody : public QEvent
+class VehicleKilledSomebody : public QEvent
 {
 public:
-  vehicleKilledSomebody(const int player, const int killCount);
+  VehicleKilledSomebody(const int player, const int killCount);
   int GetKillCount() const;
   int GetPlayer() const;
 private:
@@ -33,13 +33,13 @@ private:
 };
 
 // custom event for player respawn
-class vehicleNeedRespawn : public QEvent
+class VehicleNeedRespawn : public QEvent
 {
 public:
-  vehicleNeedRespawn(const osg::ref_ptr<vehicle> vehicle);
-  osg::ref_ptr<vehicle> GetVehicle() const;
+  VehicleNeedRespawn(const osg::ref_ptr<Vehicle> vehicle);
+  osg::ref_ptr<Vehicle> GetVehicle() const;
 private:
-  osg::ref_ptr<vehicle> _vehicle;
+  osg::ref_ptr<Vehicle> _vehicle;
 };
 
 // main window
@@ -54,7 +54,7 @@ private:
   void changeControls(int player, int controlDevice);
   void addPlayer();
   void clearPlaceForVehicle(int x, int z);
-  void spawnPlayer(osg::ref_ptr<vehicle> vehicle);
+  void spawnPlayer(osg::ref_ptr<Vehicle> vehicle);
   void restart();
   osg::ref_ptr<osg::Node> createScene();
   osgQt::GLWidget* addViewWidget(osgQt::GraphicsWindowQt* gw, osg::Node* scene);
@@ -76,16 +76,16 @@ private:
   osg::ref_ptr<osgViewer::Viewer> _viewer;
   osg::Vec2i _mapSize; // map size in tiles
   QString _fileName; // string for map file name
-  mapBuilder mapMaker;
+  MapBuilder mapMaker;
 
   int _numJoysticks; // number of connected joystics
   int _playerNum = 0; // current players number
   SDL_Joystick* _joy;
   direction _up, _down, _left, _right; // direction for vehicles depending on camera positon
-  keyboardEventHandler* _keyboardEventHandler;
+  KeyboardEventHandler* _keyboardEventHandler;
 
-  std::vector<osg::ref_ptr<vehicle>> _vehicles; // vector containing all vihecles
+  std::vector<osg::ref_ptr<Vehicle>> _vehicles; // vector containing all vihecles
   std::list<osg::Node*> _toDelete; // queue for deleting osg referensed objects
-  std::map<osg::Vec2i, blockType> _typeMap; // list of coordinates and types of tiles located on these coordinates
-  std::map<osg::Vec2i, osg::ref_ptr<osg::MatrixTransform>> _tileMap; // list of coordinates and pointers to tiles located on these coordinates
+  std::vector<std::vector<osg::ref_ptr<Tile>>> _tileMap;
+  //std::map<osg::Vec2i, osg::ref_ptr<Tile>> _tileMap; // list of coordinates and pointers to tiles located on these coordinates
 };
