@@ -11,6 +11,7 @@ class ProjectileCallback;
 
 class Projectile : public osg::MatrixTransform
 {
+  using direction = Vehicle::direction;
 public:
   Projectile( int x, 
               int y, 

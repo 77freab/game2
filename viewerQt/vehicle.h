@@ -6,14 +6,6 @@
 
 #include "mapBuilder.h"
 
-enum class direction
-{
-  UP = 0,
-  LEFT = 1,
-  DOWN = 2,
-  RIGHT = 3
-};
-
 class ViewerWidget;
 
 class Vehicle : public osg::MatrixTransform
@@ -26,6 +18,13 @@ public:
     LIGHT = 0,
     HEAVY = 1,
     MOTO = 2
+  };
+  enum class direction
+  {
+    UP = 0,
+    LEFT = 1,
+    DOWN = 2,
+    RIGHT = 3
   };
 
   void Move();
@@ -104,7 +103,7 @@ inline const bool Vehicle::IsEnabled() const
   return _enabled;
 }
 
-inline const direction Vehicle::GetCurDir() const
+inline const Vehicle::direction Vehicle::GetCurDir() const
 {
   return _curDir;
 }

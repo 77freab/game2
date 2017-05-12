@@ -19,6 +19,7 @@
 #include "motorcycle.h"
 
 class KeyboardEventHandler;
+class VehicleControls;
 
 // custom event for updating killcount
 class VehicleKilledSomebody : public QEvent
@@ -50,6 +51,7 @@ public:
                 Qt::WindowFlags f = 0,
                 osgViewer::ViewerBase::ThreadingModel threadingModel = osgViewer::Viewer::SingleThreaded);
 private:
+  void vehicleControlsInit();
   void loadMap();
   QString controlsName(int controlDevice);
   void changeControls(int player, int controlDevice);
@@ -82,10 +84,11 @@ private:
   int _numJoysticks; // number of connected joystics
   int _playerNum = 0; // current players number
   SDL_Joystick* _joy;
-  direction _up, _down, _left, _right; // direction for vehicles depending on camera positon
+  Vehicle::direction _up, _down, _left, _right; // direction for vehicles depending on camera positon
   KeyboardEventHandler* _keyboardEventHandler;
 
   std::vector<osg::ref_ptr<Vehicle>> _vehicles; // vector containing all vihecles
+  std::vector<VehicleControls*> _vehicleControls; // vector of objects handling keyboard control of vehicles
   std::list<osg::Node*> _toDelete; // queue for deleting osg referensed objects
   std::vector<std::vector<osg::ref_ptr<Tile>>> _tileMap; // 2D vector of pointers to tiles located on coordinates same as indexes of vector
 };

@@ -71,17 +71,20 @@
     <ClCompile Include="bang.cpp" />
     <ClCompile Include="bomb.cpp" />
     <ClCompile Include="heavyTank.cpp" />
+    <ClCompile Include="KeyboardEventHandler.cpp" />
     <ClCompile Include="lightTank.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="motorcycle.cpp" />
     <ClCompile Include="projectile.cpp" />
     <ClCompile Include="mapBuilder.cpp" />
     <ClCompile Include="vehicle.cpp" />
+    <ClCompile Include="VehicleControls.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="bang.h" />
     <ClInclude Include="bomb.h" />
     <ClInclude Include="heavyTank.h" />
+    <ClInclude Include="KeyboardEventHandler.h" />
     <ClInclude Include="lightTank.h" />
     <ClInclude Include="motorcycle.h" />
     <ClInclude Include="projectile.h" />
@@ -89,6 +92,7 @@
     <ClInclude Include="vehicle.h" />
     <ClInclude Include="main.h" />
     <ClInclude Include="mapBuilder.h" />
+    <ClInclude Include="VehicleControls.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
