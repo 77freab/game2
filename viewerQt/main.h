@@ -51,6 +51,7 @@ public:
                 Qt::WindowFlags f = 0,
                 osgViewer::ViewerBase::ThreadingModel threadingModel = osgViewer::Viewer::SingleThreaded);
 private:
+  void addControlDeviceButton(QPushButton* parentBtn, QMenu& menu, int player, int controlDevice);
   void vehicleControlsInit();
   void loadMap();
   QString controlsName(int controlDevice);

@@ -375,49 +375,10 @@ void ViewerWidget::addPlayer()
 
     QMenu* controlsMenu = new QMenu;
 
-    // button for control device changing to 8546
-    act = new QAction;
-    connect(act, &QAction::triggered, controlsBtn, [controlsBtn, act] { controlsBtn->setText(act->text()); });
-    connect(act, &QAction::triggered, this, [this, player] { changeControls(player, -5); });
-    act->setText(controlsName(-5));
-    controlsMenu->addAction(act);
-
-    // button for control device changing to OLK;
-    act = new QAction;
-    connect(act, &QAction::triggered, controlsBtn, [controlsBtn, act] { controlsBtn->setText(act->text()); });
-    connect(act, &QAction::triggered, this, [this, player] { changeControls(player, -4); });
-    act->setText(controlsName(-4));
-    controlsMenu->addAction(act);
-
-    // button for control device changing to YHGJ
-    act = new QAction;
-    connect(act, &QAction::triggered, controlsBtn, [controlsBtn, act] { controlsBtn->setText(act->text()); });
-    connect(act, &QAction::triggered, this, [this, player] { changeControls(player, -3); });
-    act->setText(controlsName(-3));
-    controlsMenu->addAction(act);
-
-    // button for control device changing to arrows
-    act = new QAction;
-    connect(act, &QAction::triggered, controlsBtn, [controlsBtn, act] { controlsBtn->setText(act->text()); });
-    connect(act, &QAction::triggered, this, [this, player] { changeControls(player, -2); });
-    act->setText(controlsName(-2));
-    controlsMenu->addAction(act);
-
-    // button for control device changing to "WSAD"
-    act = new QAction;
-    connect(act, &QAction::triggered, controlsBtn, [controlsBtn, act] { controlsBtn->setText(act->text()); });
-    connect(act, &QAction::triggered, this, [this, player] { changeControls(player, -1); });
-    act->setText(controlsName(-1));
-    controlsMenu->addAction(act);
-
-    // button for control device changing to any of joystics
-    for (int i = 0; i < _numJoysticks; i++)
+    // adding buttons to list of control devices
+    for (int i = -NUM_KEYBOARD_CONTROLS; i < _numJoysticks; i++)
     {
-      act = new QAction;
-      connect(act, &QAction::triggered, controlsBtn, [controlsBtn, act] { controlsBtn->setText(act->text()); });
-      connect(act, &QAction::triggered, this, [this, player, i] { changeControls(player, i); });
-      act->setText(QString::fromLocal8Bit("Joystick ") + QString::number(i));
-      controlsMenu->addAction(act);
+      addControlDeviceButton(controlsBtn, *controlsMenu, player, i);
     }
 
     controlsBtn->setMenu(controlsMenu);
@@ -441,6 +402,16 @@ void ViewerWidget::addPlayer()
     item->setTextAlignment(3, Qt::AlignCenter);
     item->setTextAlignment(4, Qt::AlignCenter);
   }
+}
+
+// adding button to list of vehicle controls
+void ViewerWidget::addControlDeviceButton(QPushButton* parentBtn, QMenu& menu, int player, int controlDevice)
+{
+  QAction* act = new QAction;
+  connect(act, &QAction::triggered, parentBtn, [parentBtn, act] { parentBtn->setText(act->text()); });
+  connect(act, &QAction::triggered, this, [this, player, controlDevice] { changeControls(player, controlDevice); });
+  act->setText(controlsName(controlDevice));
+  menu.addAction(act);
 }
 
 // remove tiles on vehicle spawn point if there are any
