@@ -17,7 +17,7 @@ private:
 Vehicle::Vehicle( int x, 
                   int z, 
                   int speed, 
-                  type startType, 
+                  Type startType, 
                   int playerNum, 
                   int controlDevice, 
                   int killCount,
@@ -26,7 +26,7 @@ Vehicle::Vehicle( int x,
                   std::list<osg::Node*>& toDelete, 
                   ViewerWidget& ViewerWindow) : 
   _shotDelayTimer(new QDeadlineTimer(-1)), 
-  _rMt(new MatrixTransform), 
+  _rotationMt(new MatrixTransform),
   _speed(speed), 
   _tileMap(tileMap), 
   _toDelete(toDelete), 
@@ -37,10 +37,15 @@ Vehicle::Vehicle( int x,
   _x(x), 
   _z(z), 
   _ViewerWindow(ViewerWindow), 
-  _currentType(startType)
+  _currentType(startType),
+  _go(false)
 {
-  // additional MatrixTransform for rotating a vehicle
-  addChild(_rMt.get());
+  addChild(_rotationMt.get());
+}
+
+Vehicle::~Vehicle()
+{
+  delete _shotDelayTimer;
 }
 
 // calculating collisions and moving
@@ -51,7 +56,7 @@ void Vehicle::Move()
   osg::Vec2i tileCollizionPt1, tileCollizionPt2;
   switch (_goDir)
   {
-  case(direction::UP) :
+  case(Direction::UP) :
   {
     vehicleCollizionPt1 = { _x - 7, _z + 7 };
     vehicleCollizionPt2 = { _x + 7, _z + 7 };
@@ -59,7 +64,7 @@ void Vehicle::Move()
     tileCollizionPt2 = { static_cast<int>(ceil((_x - 1) / 8.)), (_z + 8) / 8 };
     break;
   }
-  case(direction::DOWN) :
+  case(Direction::DOWN) :
   {
     vehicleCollizionPt1 = { _x - 7, _z - 7 };
     vehicleCollizionPt2 = { _x + 7, _z - 7 };
@@ -67,7 +72,7 @@ void Vehicle::Move()
     tileCollizionPt2 = { static_cast<int>(ceil((_x - 1) / 8.)), (_z - 8) / 8 };
     break;
   }
-  case(direction::LEFT) :
+  case(Direction::LEFT) :
   {
     vehicleCollizionPt1 = { _x - 7, _z + 7 };
     vehicleCollizionPt2 = { _x - 7, _z - 7 };
@@ -75,7 +80,7 @@ void Vehicle::Move()
     tileCollizionPt2 = { (_x - 8) / 8, static_cast<int>(ceil((_z) / 8.)) };
     break;
   }
-  case(direction::RIGHT) :
+  case(Direction::RIGHT) :
   {
     vehicleCollizionPt1 = { _x + 7, _z + 7 };
     vehicleCollizionPt2 = { _x + 7, _z - 7 };
@@ -91,13 +96,13 @@ void Vehicle::Move()
   // checking collisions with tiles
   if (curTile1 != nullptr)
   {
-    Tile::tileType curTileType = curTile1->GetType();
-    if (curTileType == Tile::tileType::ICE)
+    Tile::TileType curTileType = curTile1->GetType();
+    if (curTileType == Tile::TileType::ICE)
     {
       aGo = true;
       // ICE !!!!!!!!!!!!!
     }
-    if (curTileType == Tile::tileType::BUSHES) aGo = true;
+    if (curTileType == Tile::TileType::BUSHES) aGo = true;
   }
   else
     aGo = true;
@@ -105,13 +110,13 @@ void Vehicle::Move()
   const osg::ref_ptr<Tile>& curTile2 = _tileMap[tileCollizionPt2[0]][tileCollizionPt2[1]];
   if (curTile2 != nullptr)
   {
-    Tile::tileType curTileType = curTile2->GetType();
-    if (curTileType == Tile::tileType::ICE)
+    Tile::TileType curTileType = curTile2->GetType();
+    if (curTileType == Tile::TileType::ICE)
     {
       bGo = true;
       // ICE !!!!!!!!!!!!!
     }
-    if (curTileType == Tile::tileType::BUSHES) bGo = true;
+    if (curTileType == Tile::TileType::BUSHES) bGo = true;
   }
   else
     bGo = true;
@@ -139,10 +144,10 @@ void Vehicle::Move()
     // nothing ahead, moving
     if (!vStop)
     {
-      if (_goDir == direction::UP) _z += _speed;
-      if (_goDir == direction::DOWN) _z -= _speed;
-      if (_goDir == direction::LEFT) _x -= _speed;
-      if (_goDir == direction::RIGHT) _x += _speed;
+      if (_goDir == Direction::UP) _z += _speed;
+      if (_goDir == Direction::DOWN) _z -= _speed;
+      if (_goDir == Direction::LEFT) _x -= _speed;
+      if (_goDir == Direction::RIGHT) _x += _speed;
     }
   }
 
@@ -152,38 +157,38 @@ void Vehicle::Move()
   {
     switch (_goDir)
     {
-    case(direction::UP) :
+    case(Direction::UP) :
     {
       // slightly correcting position of vehicle when turnung to simplify driving near tiles
       if (_x % 8 >= 4) _x = (_x / 8) * 8 + 8;
       else _x = (_x / 8) * 8;
       // making rotation
       mR.makeRotate(0, osg::Vec3(0, -1, 0));
-      _rMt->setMatrix(mR);
+      _rotationMt->setMatrix(mR);
       break;
     }
-    case(direction::DOWN) :
+    case(Direction::DOWN) :
     {
       if (_x % 8 >= 4) _x = (_x / 8) * 8 + 8;
       else _x = (_x / 8) * 8;
       mR.makeRotate(osg::PI, osg::Vec3(0, -1, 0));
-      _rMt->setMatrix(mR);
+      _rotationMt->setMatrix(mR);
       break;
     }
-    case(direction::LEFT) :
+    case(Direction::LEFT) :
     {
       if (_z % 8 >= 4) _z = (_z / 8) * 8 + 8;
       else _z = (_z / 8) * 8;
       mR.makeRotate(osg::PI_2, osg::Vec3(0, -1, 0));
-      _rMt->setMatrix(mR);
+      _rotationMt->setMatrix(mR);
       break;
     }
-    case(direction::RIGHT) :
+    case(Direction::RIGHT) :
     {
       if (_z % 8 >= 4) _z = (_z / 8) * 8 + 8;
       else _z = (_z / 8) * 8;
       mR.makeRotate(-osg::PI_2, osg::Vec3(0, -1, 0));
-      _rMt->setMatrix(mR);
+      _rotationMt->setMatrix(mR);
       break;
     }
     }

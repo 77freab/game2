@@ -69,6 +69,7 @@ private:
   void testSDLJoystick();
   bool event(QEvent* event) override;
 
+private:
   QTimer _viewerUpdateTimer;
   osgQt::GLWidget* _viewerWidget;
   QHBoxLayout* _hLayout; //!< holding viewer + gui
@@ -89,7 +90,7 @@ private:
   int _playerNum = 0; //!< current players number
   SDL_Joystick* _joy;
   //! direction for vehicles depending on camera positon
-  Vehicle::direction _up, _down, _left, _right;
+  Vehicle::Direction _up, _down, _left, _right;
   KeyboardEventHandler* _keyboardEventHandler;
 
   //! vector containing all vihecles

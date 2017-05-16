@@ -12,16 +12,16 @@ VehicleControls::VehicleControls( keyboardKey up,
   _rightKey(right),
   _shotKey(shot),
   _vehicle(vehicle),
-  _upDir(Vehicle::direction::UP),
-  _downDir(Vehicle::direction::DOWN),
-  _leftDir(Vehicle::direction::LEFT),
-  _rightDir(Vehicle::direction::RIGHT)
+  _upDir(Vehicle::Direction::UP),
+  _downDir(Vehicle::Direction::DOWN),
+  _leftDir(Vehicle::Direction::LEFT),
+  _rightDir(Vehicle::Direction::RIGHT)
 {}
 
-void VehicleControls::SetMovingDirections(Vehicle::direction up,
-                                          Vehicle::direction down,
-                                          Vehicle::direction left,
-                                          Vehicle::direction right)
+void VehicleControls::SetMovingDirections(Vehicle::Direction up,
+                                          Vehicle::Direction down,
+                                          Vehicle::Direction left,
+                                          Vehicle::Direction right)
 {
   _upDir = up;
   _downDir = down;

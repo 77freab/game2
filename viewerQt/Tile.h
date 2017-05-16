@@ -5,12 +5,12 @@
 class Tile : public osg::MatrixTransform
 {
 public:
-  enum class tileStyle;
-  enum class tileType;
-  Tile(tileType bt)
+  enum class TileStyle;
+  enum class TileType;
+  Tile(TileType bt)
     : _type(bt)
   {}
-  inline tileType GetType()
+  inline TileType GetType()
   {
     return _type;
   }
@@ -22,16 +22,16 @@ protected:
   virtual ~Tile() {}
 
 private:
-  tileType _type;
+  TileType _type;
 };
 
-enum class Tile::tileStyle
+enum class Tile::TileStyle
 {
   FLAT = 0,
   VOLUMETRIC = 1
 };
 
-enum class Tile::tileType
+enum class Tile::TileType
 {
   BORDER = 0,
   BRICK = 1,

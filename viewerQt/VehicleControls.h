@@ -14,10 +14,10 @@ public:
                   keyboardKey shot,
                   Vehicle* vehicle = nullptr);
 
-  void SetMovingDirections( Vehicle::direction up,
-                            Vehicle::direction down,
-                            Vehicle::direction left,
-                            Vehicle::direction right);
+  void SetMovingDirections( Vehicle::Direction up,
+                            Vehicle::Direction down,
+                            Vehicle::Direction left,
+                            Vehicle::Direction right);
 
   //! send moving/shooting commands to vehicle according to pressed keys
   void CheckPressedKey(keyboardKey pressedKey);
@@ -34,7 +34,7 @@ private:
               _rightKey, 
               _shotKey;
   //! directions for vehicles depending on camera positon
-  Vehicle::direction  _upDir, 
+  Vehicle::Direction  _upDir, 
                       _downDir, 
                       _leftDir, 
                       _rightDir;

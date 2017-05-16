@@ -7,7 +7,7 @@
 
 #include "mapBuilder.h"
 
-osg::ref_ptr<osg::Geode> MapBuilder::makeNewTile(Tile::tileType bt, Tile::tileStyle ts)
+osg::ref_ptr<osg::Geode> MapBuilder::makeNewTile(Tile::TileType bt, Tile::TileStyle ts)
 {
   // color
   osg::ref_ptr<osg::Vec4Array> color = new osg::Vec4Array;
@@ -20,7 +20,7 @@ osg::ref_ptr<osg::Geode> MapBuilder::makeNewTile(Tile::tileType bt, Tile::tileSt
   osg::ref_ptr<osg::Vec2Array> texCoord = new osg::Vec2Array;
 
   // if tile is flat (water, ice)
-  if (ts == Tile::tileStyle::FLAT)
+  if (ts == Tile::TileStyle::FLAT)
   {
     // vertices
     geom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::QUADS, 0, 4));
@@ -129,7 +129,7 @@ osg::ref_ptr<osg::Geode> MapBuilder::makeNewTile(Tile::tileType bt, Tile::tileSt
   return geode;
 }
 
-osg::ref_ptr<Tile> MapBuilder::getTile(int x, int y, int z, Tile::tileType bt)
+osg::ref_ptr<Tile> MapBuilder::getTile(int x, int y, int z, Tile::TileType bt)
 {
   osg::ref_ptr<Tile> tile = new Tile(bt);
   osg::Matrix m;
@@ -138,8 +138,8 @@ osg::ref_ptr<Tile> MapBuilder::getTile(int x, int y, int z, Tile::tileType bt)
 
   if (_tiles[static_cast<int>(bt)] == nullptr)
   {
-    Tile::tileStyle ts = Tile::tileStyle::VOLUMETRIC;
-    if (bt == Tile::tileType::WATER || bt == Tile::tileType::ICE) ts = Tile::tileStyle::FLAT;
+    Tile::TileStyle ts = Tile::TileStyle::VOLUMETRIC;
+    if (bt == Tile::TileType::WATER || bt == Tile::TileType::ICE) ts = Tile::TileStyle::FLAT;
     makeNewTile(bt, ts);
   }
 
@@ -237,18 +237,18 @@ int MapBuilder::CreateMap(osg::ref_ptr<osg::Group> scene,
             }
             else if (reader.name() == "tile")
             {
-              Tile::tileType type;
+              Tile::TileType type;
               int x, z;
               QString attrStr = reader.attributes()[0].name().toString();
               if (attrStr == "type")
               {
                 QString attrValue = reader.attributes()[0].value().toString();
-                if (attrValue == "BORDER") type = Tile::tileType::BORDER;
-                else if (attrValue == "BRICK") type = Tile::tileType::BRICK;
-                else if (attrValue == "ARMOR") type = Tile::tileType::ARMOR;
-                else if (attrValue == "WATER") type = Tile::tileType::WATER;
-                else if (attrValue == "BUSHES") type = Tile::tileType::BUSHES;
-                else if (attrValue == "ICE") type = Tile::tileType::ICE;
+                if (attrValue == "BORDER") type      = Tile::TileType::BORDER;
+                else if (attrValue == "BRICK") type  = Tile::TileType::BRICK;
+                else if (attrValue == "ARMOR") type  = Tile::TileType::ARMOR;
+                else if (attrValue == "WATER") type  = Tile::TileType::WATER;
+                else if (attrValue == "BUSHES") type = Tile::TileType::BUSHES;
+                else if (attrValue == "ICE") type    = Tile::TileType::ICE;
               }
               reader.readNext();
               while (!reader.atEnd())

@@ -13,13 +13,13 @@ class Vehicle : public osg::MatrixTransform
 public:
   static const int SHOT_TIMEOUT = 300; //!< delay between shots in ms
   static const int COLORED_TEXTURES_NUM = 11;
-  enum class type
+  enum class Type
   {
     LIGHT = 0,
     HEAVY = 1,
     MOTO = 2
   };
-  enum class direction
+  enum class Direction
   {
     UP = 0,
     LEFT = 1,
@@ -32,10 +32,10 @@ public:
   void Enable();
   void Disable();
 
-  inline void SetMovingDirection(direction dir);
+  inline void SetMovingDirection(Direction dir);
   inline void Stop();
   inline const bool IsEnabled() const;
-  inline const direction GetCurDir() const;
+  inline const Direction GetCurDir() const;
   inline const bool NeedToGo() const;
   inline const int GetControlDevice() const;
   inline void SetControlDevice(int cd);
@@ -45,15 +45,19 @@ public:
   inline const int GetZCoord() const;
   inline const int AddKill();
   inline const int GetPlayerNum() const;
-  inline const type GetType() const;
+  inline const Type GetType() const;
   inline const int GetKillCount() const;
+  inline std::vector<std::vector<osg::ref_ptr<Tile>>>& GetTileMap() const;
+  inline std::list<osg::Node*>& GetToDeleteList() const;
+  inline std::vector<osg::ref_ptr<Vehicle>>& GetVehicleList() const;
+  inline ViewerWidget& GetMainWindow() const;
 
 protected:
   Vehicle();
   Vehicle(int x, 
           int z, 
           int speed, 
-          type startType, 
+          Type startType, 
           int playerNum, 
           int controlDevice, 
           int killCount,
@@ -65,20 +69,20 @@ protected:
   Vehicle(const Vehicle&) = delete;
   Vehicle& operator=(const Vehicle&) = delete;
 
-  virtual ~Vehicle() {}
+  virtual ~Vehicle();
 
-  inline osg::MatrixTransform* getRotateMT() const;
+  inline osg::MatrixTransform* getRotationMt() const;
   inline QDeadlineTimer* getShotDelayTimer() const;
 
+private:
   std::vector<std::vector<osg::ref_ptr<Tile>>>& _tileMap;
   std::list<osg::Node*>& _toDelete;
   std::vector<osg::ref_ptr<Vehicle>>& _vehicles;
   ViewerWidget& _ViewerWindow;
 
-private:
   int _speed;
-  type _currentType;
-  bool _go = false;
+  Type _currentType;
+  bool _go;
   int _x;
   int _z;
   QDeadlineTimer* _shotDelayTimer;
@@ -86,12 +90,13 @@ private:
   int _killCount;
   bool _enabled = false;
   int _player;
-  osg::ref_ptr<osg::MatrixTransform> _rMt;
-  direction _goDir = direction::UP;
-  direction _curDir = direction::UP;
+  //! additional MatrixTransform for rotating a vehicle
+  osg::ref_ptr<osg::MatrixTransform> _rotationMt;
+  Direction _goDir = Direction::UP;
+  Direction _curDir = Direction::UP;
 };
 
-inline void Vehicle::SetMovingDirection(direction dir)
+inline void Vehicle::SetMovingDirection(Direction dir)
 {
   _go = true;
   _goDir = dir;
@@ -107,7 +112,7 @@ inline const bool Vehicle::IsEnabled() const
   return _enabled;
 }
 
-inline const Vehicle::direction Vehicle::GetCurDir() const
+inline const Vehicle::Direction Vehicle::GetCurDir() const
 {
   return _curDir;
 }
@@ -157,7 +162,7 @@ inline const int Vehicle::GetPlayerNum() const
   return _player;
 }
 
-inline const Vehicle::type Vehicle::GetType() const
+inline const Vehicle::Type Vehicle::GetType() const
 {
   return _currentType;
 }
@@ -167,10 +172,31 @@ inline const int Vehicle::GetKillCount() const
   return _killCount;
 }
 
-inline osg::MatrixTransform* Vehicle::getRotateMT() const
+inline std::vector<std::vector<osg::ref_ptr<Tile>>>& Vehicle::GetTileMap() const
 {
-  return _rMt.get();
+  return _tileMap;
 }
+
+inline std::list<osg::Node*>& Vehicle::GetToDeleteList() const
+{
+  return _toDelete;
+}
+
+inline std::vector<osg::ref_ptr<Vehicle>>& Vehicle::GetVehicleList() const
+{
+  return _vehicles;
+}
+
+inline ViewerWidget& Vehicle::GetMainWindow() const
+{
+  return _ViewerWindow;
+}
+
+inline osg::MatrixTransform* Vehicle::getRotationMt() const
+{
+  return _rotationMt.get();
+}
+
 inline QDeadlineTimer* Vehicle::getShotDelayTimer() const
 {
   return _shotDelayTimer;

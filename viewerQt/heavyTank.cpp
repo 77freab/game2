@@ -13,7 +13,7 @@ HeavyTank::HeavyTank( int x,
                       std::list<osg::Node*>& toDelete,
                       ViewerWidget& ViewerWindow, 
                       int killCount) : 
-  Vehicle(x, z, 1, type::HEAVY, playerNum, controlDevice,
+  Vehicle(x, z, 1, Type::HEAVY, playerNum, controlDevice,
   killCount, vehicles, tileMap, toDelete, ViewerWindow)
 {
   setDataVariance(osg::Object::DYNAMIC);
@@ -36,7 +36,7 @@ HeavyTank::HeavyTank( int x,
   texture->setImage(image.get());
   state->setTextureAttributeAndModes(0, texture.get());
 
-  getRotateMT()->addChild(model.get());
+  getRotationMt()->addChild(model.get());
 }
 
 // shooting
@@ -45,8 +45,16 @@ void HeavyTank::Shoot()
   // checking for delay in shooting
   if (getShotDelayTimer()->hasExpired())
   {
-    osg::ref_ptr<Projectile> prj = new Projectile(GetXCoord() - 4, -4, GetZCoord() - 4, 
-      2, GetCurDir(), *this, _vehicles, _tileMap, _toDelete, _ViewerWindow);
+    osg::ref_ptr<Projectile> prj = new Projectile(GetXCoord() - 4, 
+                                                  -4, 
+                                                  GetZCoord() - 4, 
+                                                  2, 
+                                                  GetCurDir(), 
+                                                  *this, 
+                                                  GetVehicleList(),
+                                                  GetTileMap(),
+                                                  GetToDeleteList(),
+                                                  GetMainWindow());
     getParent(0)->addChild(prj.get());
     prj->setName(getName() + " - projectile");
     // updating the delay timer

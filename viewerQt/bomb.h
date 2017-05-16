@@ -29,7 +29,9 @@ private:
   bool destroyTilesAt(int x, int z);
   void destroyVehiclesAt(int fromX, int toX, int fromZ, int toZ);
   void Explode();
+  class BombCallback;
   
+private:
   std::vector<std::vector<osg::ref_ptr<Tile>>>& _tileMap;
   std::list<osg::Node*>& _toDelete;
   std::vector<osg::ref_ptr<Vehicle>>& _vehicles;
@@ -38,6 +40,4 @@ private:
   int _z;
   ViewerWidget& _ViewerWindow;
   Vehicle& _parentVehicle;
-
-  class BombCallback;
 };

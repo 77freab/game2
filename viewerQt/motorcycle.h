@@ -27,8 +27,8 @@ protected:
   virtual ~Motorcycle() {}
 
 private:
-  static const int MAX_NUM_BOMBS = 5;
-  int _numBombs = 0;
-
   virtual void Shoot() override;
+
+private:
+  int _numBombs = 0;
 };

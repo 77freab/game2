@@ -267,7 +267,7 @@ void ViewerWidget::addPlayer()
     connect(act, &QAction::triggered, vehicleTypeBtn, [vehicleTypeBtn, act] { vehicleTypeBtn->setText(act->text()); });
     connect(act, &QAction::triggered, this, [this, player] 
     { 
-      if (_vehicles[player]->GetType() != Vehicle::type::LIGHT)
+      if (_vehicles[player]->GetType() != Vehicle::Type::LIGHT)
       {
         // saving some information before deleting old vehicle
         int controlDevice = _vehicles[player]->GetControlDevice();
@@ -299,7 +299,7 @@ void ViewerWidget::addPlayer()
     connect(act, &QAction::triggered, vehicleTypeBtn, [vehicleTypeBtn, act] { vehicleTypeBtn->setText(act->text()); });
     connect(act, &QAction::triggered, this, [this, player] 
     { 
-      if (_vehicles[player]->GetType() != Vehicle::type::HEAVY)
+      if (_vehicles[player]->GetType() != Vehicle::Type::HEAVY)
       {
         // saving some information before deleting old vehicle
         int controlDevice = _vehicles[player]->GetControlDevice();
@@ -331,7 +331,7 @@ void ViewerWidget::addPlayer()
     connect(act, &QAction::triggered, vehicleTypeBtn, [vehicleTypeBtn, act] { vehicleTypeBtn->setText(act->text()); });
     connect(act, &QAction::triggered, this, [this, player]
     {
-      if (_vehicles[player]->GetType() != Vehicle::type::MOTO)
+      if (_vehicles[player]->GetType() != Vehicle::Type::MOTO)
       {
         // saving some information before deleting old vehicle
         int controlDevice = _vehicles[player]->GetControlDevice();
@@ -618,18 +618,18 @@ bool ViewerWidget::event(QEvent* event)
       if (camX < 0)
       {
         // camera from below of game area
-        _up = Vehicle::direction::UP;
-        _down = Vehicle::direction::DOWN;
-        _left = Vehicle::direction::LEFT;
-        _right = Vehicle::direction::RIGHT;
+        _up    = Vehicle::Direction::UP;
+        _down  = Vehicle::Direction::DOWN;
+        _left  = Vehicle::Direction::LEFT;
+        _right = Vehicle::Direction::RIGHT;
       }
       else
       {
         // camera to the left from game area
-        _up = Vehicle::direction::RIGHT;
-        _down = Vehicle::direction::LEFT;
-        _left = Vehicle::direction::UP;
-        _right = Vehicle::direction::DOWN;
+        _up    = Vehicle::Direction::RIGHT;
+        _down  = Vehicle::Direction::LEFT;
+        _left  = Vehicle::Direction::UP;
+        _right = Vehicle::Direction::DOWN;
       }
     }
     else
@@ -637,18 +637,18 @@ bool ViewerWidget::event(QEvent* event)
       if (camX > 0)
       {
         // camera from above of game area
-        _up = Vehicle::direction::DOWN;
-        _down = Vehicle::direction::UP;
-        _left = Vehicle::direction::RIGHT;
-        _right = Vehicle::direction::LEFT;
+        _up    = Vehicle::Direction::DOWN;
+        _down  = Vehicle::Direction::UP;
+        _left  = Vehicle::Direction::RIGHT;
+        _right = Vehicle::Direction::LEFT;
       }
       else
       {
         // camera to the right from game area
-        _up = Vehicle::direction::LEFT;
-        _down = Vehicle::direction::RIGHT;
-        _left = Vehicle::direction::DOWN;
-        _right = Vehicle::direction::UP;
+        _up    = Vehicle::Direction::LEFT;
+        _down  = Vehicle::Direction::RIGHT;
+        _left  = Vehicle::Direction::DOWN;
+        _right = Vehicle::Direction::UP;
       }
     }
 

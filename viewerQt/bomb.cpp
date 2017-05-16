@@ -76,7 +76,7 @@ bool Bomb::destroyTilesAt(int x, int z)
   // if there is a tile on given coordinates
   if ((curTile = _tileMap[x][z]) != nullptr)
   {
-    if (curTile->GetType() == Tile::tileType::BRICK)
+    if (curTile->GetType() == Tile::TileType::BRICK)
     {
       // destroy this tile
       _toDelete.push_back(_tileMap[x][z]);

@@ -139,8 +139,8 @@ void Projectile::TryToMove()
 
   if (curTile1 != nullptr)
   {
-    Tile::tileType curTileType = curTile1->GetType();
-    if (curTileType == Tile::tileType::BRICK)
+    Tile::TileType curTileType = curTile1->GetType();
+    if (curTileType == Tile::TileType::BRICK)
     {
       // destroying tile
       _toDelete.push_back(curTile1);
@@ -148,7 +148,7 @@ void Projectile::TryToMove()
       // need to destroy this projectile
       projDel = true;
     }
-    else if ((curTileType == Tile::tileType::ARMOR) || (curTileType == Tile::tileType::BORDER))
+    else if ((curTileType == Tile::TileType::ARMOR) || (curTileType == Tile::TileType::BORDER))
     {
       // need to destroy this projectile
       projDel = true;
@@ -162,8 +162,8 @@ void Projectile::TryToMove()
   osg::ref_ptr<Tile>& curTile2 = _tileMap[_tileCollizionPt2[0]][_tileCollizionPt2[1]];
   if (curTile2 != nullptr)
   {
-    Tile::tileType curTileType = curTile2->GetType();
-    if (curTileType == Tile::tileType::BRICK)
+    Tile::TileType curTileType = curTile2->GetType();
+    if (curTileType == Tile::TileType::BRICK)
     {
       // destroying tile
       _toDelete.push_back(curTile2);
@@ -171,7 +171,7 @@ void Projectile::TryToMove()
       // need to destroy this projectile
       projDel = true;
     }
-    else if ((curTileType == Tile::tileType::ARMOR) || (curTileType == Tile::tileType::BORDER))
+    else if ((curTileType == Tile::TileType::ARMOR) || (curTileType == Tile::TileType::BORDER))
     {
       // need to destroy this projectile
       projDel = true;
@@ -199,23 +199,11 @@ void Projectile::TryToMove()
             // need to destroy this projectile
             projDel = true;
             // if we hit front armor of heavy tank projectile can't pierce it
-            if (!(curVehicle->GetType() == Vehicle::type::HEAVY &&
+            if (!(curVehicle->GetType() == Vehicle::Type::HEAVY &&
               abs(static_cast<int>(curVehicle->GetCurDir()) - static_cast<int>(_dir)) == 2))
             {
               // creating explosion
-
-              //// конструктор копирования
-              //Bang* bng1 = new Bang(vehicleX, 4, vehicleZ, _toDelete);
-              //Bang* bng = new Bang(*bng1);
-
-              //// копирующий оператор присаивания
-              //Bang* bng1 = new Bang(vehicleX, 4, vehicleZ, _toDelete);
-              //Bang* bng;
-              //*bng = *bng1;
-
-              //стандарт
               Bang* bng = new Bang(vehicleX, 4, vehicleZ, _toDelete);
-
 
               _parentVehicle.getParent(0)->addChild(bng);
 

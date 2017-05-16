@@ -15,13 +15,13 @@ protected:
   virtual ~Bang() {}
 
 private:
+  class BangCallback;
+  //! called from update callback to animate the explosion
+  void AnimateBang(double simTime);
+
+private:
   double _timer;
   osg::ref_ptr<osg::Geometry> _geom;
   std::list<osg::Node*>& _toDelete;
   int _animateStage;
-
-  //! called from update callback to animate the explosion
-  void AnimateBang(double simTime);
-
-  class BangCallback;
 };

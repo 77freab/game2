@@ -4,6 +4,8 @@
 #include "bomb.h"
 #include "motorcycle.h"
 
+const int MAX_NUM_BOMBS = 5;
+
 Motorcycle::Motorcycle( int x, 
                         int z, 
                         int playerNum, 
@@ -13,7 +15,7 @@ Motorcycle::Motorcycle( int x,
                         std::list<osg::Node*>& toDelete,
                         ViewerWidget& ViewerWindow, 
                         int killCount) : 
-  Vehicle(x, z, 3, type::MOTO, playerNum, controlDevice, 
+  Vehicle(x, z, 3, Type::MOTO, playerNum, controlDevice, 
   killCount, vehicles, tileMap, toDelete, ViewerWindow)
 {
   setDataVariance(osg::Object::DYNAMIC);
@@ -36,7 +38,7 @@ Motorcycle::Motorcycle( int x,
   texture->setImage(image.get());
   state->setTextureAttributeAndModes(0, texture.get());
 
-  getRotateMT()->addChild(model.get());
+  getRotationMt()->addChild(model.get());
 }
 
 // shooting
@@ -46,8 +48,14 @@ void Motorcycle::Shoot()
   if (getShotDelayTimer()->hasExpired() && _numBombs < MAX_NUM_BOMBS)
   {
     _numBombs++;
-    osg::ref_ptr<Bomb> droppedBomb = new Bomb(GetXCoord(), -4, GetZCoord(), 
-      *this, _vehicles, _tileMap, _toDelete, _ViewerWindow);
+    osg::ref_ptr<Bomb> droppedBomb = new Bomb(GetXCoord(), 
+                                              -4, 
+                                              GetZCoord(), 
+                                              *this, 
+                                              GetVehicleList(),
+                                              GetTileMap(),
+                                              GetToDeleteList(),
+                                              GetMainWindow());
     getParent(0)->addChild(droppedBomb.get());
     droppedBomb->setName(getName() + " - bomb");
     // updating the delay timer
