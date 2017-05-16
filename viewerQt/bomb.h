@@ -5,7 +5,6 @@
 #include "mapBuilder.h"
 #include "vehicle.h"
 
-class BombCallback;
 class ViewerWidget;
 
 class Bomb : public osg::MatrixTransform
@@ -19,18 +18,26 @@ public:
         std::vector<std::vector<osg::ref_ptr<Tile>>>& tileMap,
         std::list<osg::Node*>& toDelete, 
         ViewerWidget& ViewerWindow);
-  void Explode();
+
+  Bomb(const Bomb&) = delete;
+  Bomb& operator=(const Bomb&) = delete;
+
+protected:
+  virtual ~Bomb() {}
+
 private:
   bool destroyTilesAt(int x, int z);
   void destroyVehiclesAt(int fromX, int toX, int fromZ, int toZ);
-
+  void Explode();
+  
   std::vector<std::vector<osg::ref_ptr<Tile>>>& _tileMap;
   std::list<osg::Node*>& _toDelete;
   std::vector<osg::ref_ptr<Vehicle>>& _vehicles;
   int _x;
   int _y;
   int _z;
-  osg::ref_ptr<BombCallback> _clb;
   ViewerWidget& _ViewerWindow;
   Vehicle& _parentVehicle;
+
+  class BombCallback;
 };

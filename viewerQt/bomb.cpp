@@ -10,24 +10,22 @@
 
 const int BOMB_BANG_DELAY = 100;
 
-class BombCallback : public osg::NodeCallback
+class Bomb::BombCallback : public osg::NodeCallback
 {
 public:
-  void operator()(osg::Node* nd, osg::NodeVisitor* ndv) override;
+  void operator()(osg::Node* nd, osg::NodeVisitor* ndv) override
+  {
+    if (_delay == BOMB_BANG_DELAY)
+    {
+      Bomb* bmb = static_cast<Bomb*>(nd);
+      bmb->Explode();
+    }
+    _delay++;
+    traverse(nd, ndv);
+  }
 private:
   int _delay = 0;
 };
-
-void BombCallback::operator()(osg::Node* nd, osg::NodeVisitor* ndv)
-{
-  if (_delay == BOMB_BANG_DELAY)
-  {
-    Bomb* bmb = static_cast<Bomb*>(nd);
-    bmb->Explode();
-  }
-  _delay++;
-  traverse(nd, ndv);
-}
 
 // constructor
 Bomb::Bomb( int x, 
@@ -41,14 +39,13 @@ Bomb::Bomb( int x,
   _x(qFloor(x / 8.) * 8), 
   _y(y), 
   _z(qFloor(z / 8.) * 8),
-  _clb(new BombCallback), 
   _vehicles(vehicles), 
   _tileMap(tileMap),
   _toDelete(toDelete), 
   _ViewerWindow(ViewerWindow),
   _parentVehicle(parentVehicle)
 {
-  setUpdateCallback(_clb);
+  setUpdateCallback(new BombCallback);
 
   // move bomb to spawn place
   osg::Matrix m;
@@ -191,7 +188,6 @@ void Bomb::Explode()
   destroyVehiclesAt(fromX * 8, toX * 8, _z - 8, _z + 8);
 
   // destroing bomb
-  removeUpdateCallback(_clb);
   _toDelete.push_back(this);
-  dynamic_cast<Motorcycle*>(&_parentVehicle)->BombExploded();
+  static_cast<Motorcycle*>(&_parentVehicle)->BombExploded();
 }

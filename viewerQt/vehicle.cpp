@@ -1,23 +1,18 @@
 #include "vehicle.h"
 
-//const int SHOT_TIMEOUT = 300; // delay between shots in ms
-//const int COLORED_TEXTURES_NUM = 11;
-
 class VehicleCallback : public osg::NodeCallback
 {
 public:
-  void operator()(osg::Node*, osg::NodeVisitor*) override;
+  void operator()(osg::Node* nd, osg::NodeVisitor* ndv) override
+  {
+    Vehicle* veh = static_cast<Vehicle*>(nd);
+    if (!delay && veh->NeedToGo()) veh->Move();
+    delay = !delay;
+    traverse(nd, ndv);
+  }
 private:
   bool delay = false;
 };
-
-void VehicleCallback::operator()(osg::Node* nd, osg::NodeVisitor* ndv)
-{
-  Vehicle* veh = static_cast<Vehicle*>(nd);
-  if (!delay && veh->NeedToGo()) veh->Move();
-  delay = !delay;
-  traverse(nd, ndv);
-}
 
 Vehicle::Vehicle( int x, 
                   int z, 
@@ -203,16 +198,14 @@ void Vehicle::Move()
 
 void Vehicle::Enable()
 {
-  _clb = new VehicleCallback;
-  setUpdateCallback(_clb);
+  setUpdateCallback(new VehicleCallback);
   _shotDelayTimer->setRemainingTime(SHOT_TIMEOUT);
   _enabled = true;
 }
 
 void Vehicle::Disable()
 {
-  removeUpdateCallback(_clb); // vehicle can not move
-  _clb = nullptr; // deleting callback
+  removeUpdateCallback(getUpdateCallback()); // vehicle can not move
   _shotDelayTimer->setRemainingTime(-1); // can not fire
   _enabled = false;
 }

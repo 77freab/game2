@@ -15,6 +15,12 @@ public:
     return _type;
   }
 
+  Tile(const Tile&) = delete;
+  Tile& operator=(const Tile&) = delete;
+
+protected:
+  virtual ~Tile() {}
+
 private:
   tileType _type;
 };

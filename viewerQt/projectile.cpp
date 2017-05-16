@@ -7,21 +7,19 @@
 #include "main.h"
 #include "projectile.h"
 
-class ProjectileCallback : public osg::NodeCallback
+class Projectile::ProjectileCallback : public osg::NodeCallback
 {
 public:
-  void operator()(osg::Node* nd, osg::NodeVisitor* ndv) override;
+  void operator()(osg::Node* nd, osg::NodeVisitor* ndv) override
+  {
+    Projectile* prj = static_cast<Projectile*>(nd);
+    if (!delay) prj->TryToMove();
+    delay = !delay;
+    traverse(nd, ndv);
+  }
 private:
   bool delay = false;
 };
-
-void ProjectileCallback::operator()(osg::Node* nd, osg::NodeVisitor* ndv)
-{
-  Projectile* prj = static_cast<Projectile*>(nd);
-  if (!delay) prj->TryToMove();
-  delay = !delay;
-  traverse(nd, ndv);
-}
 
 // construcor
 Projectile::Projectile( int x, 
@@ -39,7 +37,6 @@ Projectile::Projectile( int x,
   _y(y), 
   _z(z), 
   _speed(speed), 
-  _clb(new ProjectileCallback),
   _parentVehicle(parentVehicle), 
   _vehicles(vehicles), 
   _tileMap(tileMap),
@@ -47,12 +44,10 @@ Projectile::Projectile( int x,
   _ViewerWindow(ViewerWindow)
 {
   setDataVariance(osg::Object::DYNAMIC);
-  setUpdateCallback(_clb);
+  setUpdateCallback(new ProjectileCallback);
 
   // move projectile to spawn place
-  osg::Matrix m;
-  m.makeTranslate(_x, _y, _z);
-  setMatrix(m); // inherited from MatrixTransform for transition
+  setMatrix(osg::Matrix::translate(_x, _y, _z));
   
   // reading texture
   osg::ref_ptr<osg::Image> textureImage = osgDB::readImageFile
@@ -75,8 +70,7 @@ Projectile::Projectile( int x,
         _z += _speed;
         _tileCollizionPt1[1] = (_z + 8) / 8;
         _tileCollizionPt2[1] = (_z + 8) / 8;
-        _mT.makeTranslate(_x, _y, _z);
-        setMatrix(_mT);
+        setMatrix(osg::Matrix::translate(_x, _y, _z));
       };
       break;
     }
@@ -92,8 +86,7 @@ Projectile::Projectile( int x,
         _z -= _speed;
         _tileCollizionPt1[1] = (_z) / 8;
         _tileCollizionPt2[1] = (_z) / 8;
-        _mT.makeTranslate(_x, _y, _z);
-        setMatrix(_mT);
+        setMatrix(osg::Matrix::translate(_x, _y, _z));
       };
       break;
     }
@@ -108,8 +101,7 @@ Projectile::Projectile( int x,
         _x -= _speed;
         _tileCollizionPt1[0] = (_x) / 8;
         _tileCollizionPt2[0] = (_x) / 8;
-        _mT.makeTranslate(_x, _y, _z);
-        setMatrix(_mT);
+        setMatrix(osg::Matrix::translate(_x, _y, _z));
       };
       break;
     }
@@ -124,8 +116,7 @@ Projectile::Projectile( int x,
         _x += _speed;
         _tileCollizionPt1[0] = (_x + 8) / 8;
         _tileCollizionPt2[0] = (_x + 8) / 8;
-        _mT.makeTranslate(_x, _y, _z);
-        setMatrix(_mT);
+        setMatrix(osg::Matrix::translate(_x, _y, _z));
       };
       break;
     }
@@ -212,7 +203,20 @@ void Projectile::TryToMove()
               abs(static_cast<int>(curVehicle->GetCurDir()) - static_cast<int>(_dir)) == 2))
             {
               // creating explosion
+
+              //// конструктор копирования
+              //Bang* bng1 = new Bang(vehicleX, 4, vehicleZ, _toDelete);
+              //Bang* bng = new Bang(*bng1);
+
+              //// копирующий оператор присаивания
+              //Bang* bng1 = new Bang(vehicleX, 4, vehicleZ, _toDelete);
+              //Bang* bng;
+              //*bng = *bng1;
+
+              //стандарт
               Bang* bng = new Bang(vehicleX, 4, vehicleZ, _toDelete);
+
+
               _parentVehicle.getParent(0)->addChild(bng);
 
               // destroying vehicle
@@ -235,13 +239,8 @@ void Projectile::TryToMove()
       }
     }
   }
-
-  if (projDel)
-  {
-    // destroying this projectile
-    removeUpdateCallback(_clb);
-    _toDelete.push_back(this);
-  }
-
+  // destroying this projectile
+  if (projDel) _toDelete.push_back(this);
+  // if projectile still alive - moving
   if (aGo && bGo && !projDel) moving();
 }

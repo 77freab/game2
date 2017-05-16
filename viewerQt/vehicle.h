@@ -11,7 +11,7 @@ class ViewerWidget;
 class Vehicle : public osg::MatrixTransform
 {
 public:
-  static const int SHOT_TIMEOUT = 300; // delay between shots in ms
+  static const int SHOT_TIMEOUT = 300; //!< delay between shots in ms
   static const int COLORED_TEXTURES_NUM = 11;
   enum class type
   {
@@ -62,6 +62,11 @@ protected:
           std::list<osg::Node*>& toDelete,
           ViewerWidget& ViewerWindow);
 
+  Vehicle(const Vehicle&) = delete;
+  Vehicle& operator=(const Vehicle&) = delete;
+
+  virtual ~Vehicle() {}
+
   inline osg::MatrixTransform* getRotateMT() const;
   inline QDeadlineTimer* getShotDelayTimer() const;
 
@@ -81,7 +86,6 @@ private:
   int _killCount;
   bool _enabled = false;
   int _player;
-  osg::ref_ptr<osg::NodeCallback> _clb;
   osg::ref_ptr<osg::MatrixTransform> _rMt;
   direction _goDir = direction::UP;
   direction _curDir = direction::UP;

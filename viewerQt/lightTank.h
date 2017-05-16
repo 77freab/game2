@@ -15,6 +15,13 @@ public:
             ViewerWidget& ViewerWindow, 
             int killCount);
 
-  void Shoot() override;
+  LightTank(const LightTank&) = delete;
+  LightTank& operator=(const LightTank&) = delete;
+
+protected:
+  virtual ~LightTank() {}
+
+private:
+  virtual void Shoot() override;
 };
 

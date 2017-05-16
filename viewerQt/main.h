@@ -21,7 +21,7 @@
 class KeyboardEventHandler;
 class VehicleControls;
 
-// custom event for updating killcount
+//! custom event for updating killcount
 class VehicleKilledSomebody : public QEvent
 {
 public:
@@ -33,7 +33,7 @@ private:
   int _player;
 };
 
-// custom event for player respawn
+//! custom event for player respawn
 class VehicleNeedRespawn : public QEvent
 {
 public:
@@ -43,7 +43,7 @@ private:
   osg::ref_ptr<Vehicle> _vehicle;
 };
 
-// main window
+//! main window
 class ViewerWidget : public QWidget
 {
 public:
@@ -51,7 +51,10 @@ public:
                 Qt::WindowFlags f = 0,
                 osgViewer::ViewerBase::ThreadingModel threadingModel = osgViewer::Viewer::SingleThreaded);
 private:
-  void addControlDeviceButton(QPushButton* parentBtn, QMenu& menu, int player, int controlDevice);
+  void addControlDeviceButton(QPushButton* parentBtn, 
+                              QMenu& menu, 
+                              int player, 
+                              int controlDevice);
   void vehicleControlsInit();
   void loadMap();
   QString controlsName(int controlDevice);
@@ -68,8 +71,8 @@ private:
 
   QTimer _viewerUpdateTimer;
   osgQt::GLWidget* _viewerWidget;
-  QHBoxLayout* _hLayout; // holding viewer + gui
-  QVBoxLayout* _vLayout; // holding components of gui
+  QHBoxLayout* _hLayout; //!< holding viewer + gui
+  QVBoxLayout* _vLayout; //!< holding components of gui
   QTreeWidget* _playersList;
   QPushButton* _restartBtn;
   QPushButton* _addPlayerBtn;
@@ -78,18 +81,23 @@ private:
 
   osg::ref_ptr<osg::Node> _scene;
   osg::ref_ptr<osgViewer::Viewer> _viewer;
-  osg::Vec2i _mapSize; // map size in tiles
-  QString _fileName; // string for map file name
+  osg::Vec2i _mapSize; //!< map size in tiles
+  QString _fileName; //!< string for map file name
   MapBuilder mapMaker;
 
-  int _numJoysticks; // number of connected joystics
-  int _playerNum = 0; // current players number
+  int _numJoysticks; //!< number of connected joystics
+  int _playerNum = 0; //!< current players number
   SDL_Joystick* _joy;
-  Vehicle::direction _up, _down, _left, _right; // direction for vehicles depending on camera positon
+  //! direction for vehicles depending on camera positon
+  Vehicle::direction _up, _down, _left, _right;
   KeyboardEventHandler* _keyboardEventHandler;
 
-  std::vector<osg::ref_ptr<Vehicle>> _vehicles; // vector containing all vihecles
-  std::vector<VehicleControls*> _vehicleControls; // vector of objects handling keyboard control of vehicles
-  std::list<osg::Node*> _toDelete; // queue for deleting osg referensed objects
-  std::vector<std::vector<osg::ref_ptr<Tile>>> _tileMap; // 2D vector of pointers to tiles located on coordinates same as indexes of vector
+  //! vector containing all vihecles
+  std::vector<osg::ref_ptr<Vehicle>> _vehicles;
+  //! vector of objects handling keyboard control of vehicles
+  std::vector<VehicleControls*> _vehicleControls;
+  //! queue for deleting osg referensed objects
+  std::list<osg::Node*> _toDelete;
+  //! 2D vector of pointers to tiles located on coordinates same as indexes of vector
+  std::vector<std::vector<osg::ref_ptr<Tile>>> _tileMap;
 };

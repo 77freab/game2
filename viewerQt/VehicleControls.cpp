@@ -31,47 +31,51 @@ void VehicleControls::SetMovingDirections(Vehicle::direction up,
 
 void VehicleControls::CheckPressedKey(keyboardKey pressedKey)
 {
-  if (pressedKey == _upKey)
+  if (_vehicle != nullptr)
   {
-    _pressedKeys[_upKey] = true;
-    _vehicle->SetMovingDirection(_upDir);
-  }
-  else if (pressedKey == _downKey)
-  {
-    _pressedKeys[_downKey] = true;
-    _vehicle->SetMovingDirection(_downDir);
-  }
-  else if (pressedKey == _leftKey)
-  {
-    _pressedKeys[_leftKey] = true;
-    _vehicle->SetMovingDirection(_leftDir);
-  }
-  else if (pressedKey == _rightKey)
-  {
-    _pressedKeys[_rightKey] = true;
-    _vehicle->SetMovingDirection(_rightDir);
-  }
-  else if (pressedKey == _shotKey)
-  {
-    _vehicle->Shoot();
+    if (pressedKey == _upKey)
+    {
+      _pressedKeys[_upKey] = true;
+      _vehicle->SetMovingDirection(_upDir);
+    }
+    else if (pressedKey == _downKey)
+    {
+      _pressedKeys[_downKey] = true;
+      _vehicle->SetMovingDirection(_downDir);
+    }
+    else if (pressedKey == _leftKey)
+    {
+      _pressedKeys[_leftKey] = true;
+      _vehicle->SetMovingDirection(_leftDir);
+    }
+    else if (pressedKey == _rightKey)
+    {
+      _pressedKeys[_rightKey] = true;
+      _vehicle->SetMovingDirection(_rightDir);
+    }
+    else if (pressedKey == _shotKey)
+    {
+      _vehicle->Shoot();
+    }
   }
 }
 
 void VehicleControls::CheckReleasedKey(keyboardKey releasedKey)
 {
-  using keyboard = osgGA::GUIEventAdapter; // to make constants shorter
-
-  if (releasedKey == _upKey ||
+  if (_vehicle != nullptr)
+  {
+    if (releasedKey == _upKey ||
       releasedKey == _downKey ||
       releasedKey == _leftKey ||
       releasedKey == _rightKey)
-  {
-    _pressedKeys[releasedKey] = false;
-    // if there is at least one key held, then vehicle will move to that direction
-    if (_pressedKeys[_upKey]) _vehicle->SetMovingDirection(_upDir);
-    else if (_pressedKeys[_downKey]) _vehicle->SetMovingDirection(_downDir);
-    else if (_pressedKeys[_leftKey]) _vehicle->SetMovingDirection(_leftDir);
-    else if (_pressedKeys[_rightKey]) _vehicle->SetMovingDirection(_rightDir);
-    else _vehicle->Stop();
+    {
+      _pressedKeys[releasedKey] = false;
+      // if there is at least one key held, then vehicle will move to that direction
+      if (_pressedKeys[_upKey]) _vehicle->SetMovingDirection(_upDir);
+      else if (_pressedKeys[_downKey]) _vehicle->SetMovingDirection(_downDir);
+      else if (_pressedKeys[_leftKey]) _vehicle->SetMovingDirection(_leftDir);
+      else if (_pressedKeys[_rightKey]) _vehicle->SetMovingDirection(_rightDir);
+      else _vehicle->Stop();
+    }
   }
 }

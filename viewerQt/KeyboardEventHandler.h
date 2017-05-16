@@ -8,7 +8,15 @@ class KeyboardEventHandler : public osgGA::GUIEventHandler
 {
 public:
   KeyboardEventHandler(std::vector<VehicleControls*>& vehicleControls);
-  bool handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter&) override;
+
+  KeyboardEventHandler(const KeyboardEventHandler&) = delete;
+  KeyboardEventHandler& operator=(const KeyboardEventHandler&) = delete;
+
+  virtual bool handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter&) override;
+
+protected:
+  virtual ~KeyboardEventHandler() {}
+
 private:
   std::vector<VehicleControls*>& _vehicleControls;
 };

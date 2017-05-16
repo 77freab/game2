@@ -6,7 +6,7 @@ KeyboardEventHandler::KeyboardEventHandler(std::vector<VehicleControls*>& vehicl
 
 bool KeyboardEventHandler::handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter&)
 {
-  using keyboard = osgGA::GUIEventAdapter; // to make constants shorter
+  using keyboard = osgGA::GUIEventAdapter; //!< to make constants shorter
 
   switch (ea.getEventType())
   {
@@ -14,10 +14,7 @@ bool KeyboardEventHandler::handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIAc
     {
       for (VehicleControls* vc : _vehicleControls)
       {
-        if (vc->GetVehicle() != nullptr)
-        {
-          vc->CheckPressedKey(static_cast<keyboard::KeySymbol>(ea.getKey()));
-        }
+        vc->CheckPressedKey(static_cast<keyboard::KeySymbol>(ea.getKey()));
       }
       return true;
     }
@@ -25,10 +22,7 @@ bool KeyboardEventHandler::handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIAc
     {
       for (VehicleControls* vc : _vehicleControls)
       {
-        if (vc->GetVehicle() != nullptr)
-        {
-          vc->CheckReleasedKey(static_cast<keyboard::KeySymbol>(ea.getKey()));
-        }
+        vc->CheckReleasedKey(static_cast<keyboard::KeySymbol>(ea.getKey()));
       }
       return true;
     }

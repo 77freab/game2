@@ -16,7 +16,6 @@
 #undef main
 
 const int SIDE_PANEL_SIZE = 415;
-const int NUM_KEYBOARD_CONTROLS = 5;
 const QEvent::Type VEHICLE_KILLED_SOMEBODY_EVENT = static_cast<QEvent::Type>(QEvent::User + 1);
 const QEvent::Type VEHICLE_NEED_RESPAWN_EVENT = static_cast<QEvent::Type>(QEvent::User + 2);
 
@@ -53,7 +52,6 @@ ViewerWidget::ViewerWidget( QWidget* parent,
                             osgViewer::ViewerBase::ThreadingModel threadingModel) : 
   QWidget(parent, f), 
   _viewer(new osgViewer::Viewer),
-  _vehicleControls(NUM_KEYBOARD_CONTROLS, nullptr),
   _keyboardEventHandler(new KeyboardEventHandler(_vehicleControls))
 {
   srand(time(NULL));
@@ -149,52 +147,52 @@ void ViewerWidget::vehicleControlsInit()
 {
   using keyboard = osgGA::GUIEventAdapter; // to make constants shorter
 
-  _vehicleControls[0] = new VehicleControls(keyboard::KEY_W,
-                                            keyboard::KEY_S,
-                                            keyboard::KEY_A,
-                                            keyboard::KEY_D,
-                                            keyboard::KEY_Space);
+  _vehicleControls.push_back(new VehicleControls( keyboard::KEY_Y,
+                                                  keyboard::KEY_H,
+                                                  keyboard::KEY_G,
+                                                  keyboard::KEY_J,
+                                                  keyboard::KEY_N));
 
-  _vehicleControls[1] = new VehicleControls(keyboard::KEY_Up,
-                                            keyboard::KEY_Down,
-                                            keyboard::KEY_Left,
-                                            keyboard::KEY_Right,
-                                            keyboard::KEY_0);
+  _vehicleControls.push_back(new VehicleControls( keyboard::KEY_O,
+                                                  keyboard::KEY_L,
+                                                  keyboard::KEY_K,
+                                                  keyboard::KEY_Semicolon,
+                                                  keyboard::KEY_Period));
 
-  _vehicleControls[2] = new VehicleControls(keyboard::KEY_Y,
-                                            keyboard::KEY_H,
-                                            keyboard::KEY_G,
-                                            keyboard::KEY_J,
-                                            keyboard::KEY_N);
+  _vehicleControls.push_back(new VehicleControls( keyboard::KEY_8,
+                                                  keyboard::KEY_5,
+                                                  keyboard::KEY_4,
+                                                  keyboard::KEY_6,
+                                                  keyboard::KEY_Plus));
 
-  _vehicleControls[3] = new VehicleControls(keyboard::KEY_O,
-                                            keyboard::KEY_L,
-                                            keyboard::KEY_K,
-                                            keyboard::KEY_Semicolon,
-                                            keyboard::KEY_Period);
+  _vehicleControls.push_back(new VehicleControls( keyboard::KEY_Up,
+                                                  keyboard::KEY_Down,
+                                                  keyboard::KEY_Left,
+                                                  keyboard::KEY_Right,
+                                                  keyboard::KEY_0));
 
-  _vehicleControls[4] = new VehicleControls(keyboard::KEY_8,
-                                            keyboard::KEY_5,
-                                            keyboard::KEY_4,
-                                            keyboard::KEY_6,
-                                            keyboard::KEY_Plus);
+  _vehicleControls.push_back(new VehicleControls( keyboard::KEY_W,
+                                                  keyboard::KEY_S,
+                                                  keyboard::KEY_A,
+                                                  keyboard::KEY_D,
+                                                  keyboard::KEY_Space));
 }
 
 // accept number of control device, 
 // return string with the name of this control device
 QString ViewerWidget::controlsName(int controlDevice)
 {
-  // controlDevice = -5 is "8546"   + '+'
-  // controlDevice = -4 is "OLK;"   + '.'
+  // controlDevice = -5 is "WSAD"   + 'Space'
+  // controlDevice = -4 is "Arrows" + 'Num_0'
   // controlDevice = -3 is "YHGJ"   + 'N'
-  // controlDevice = -2 is "Arrows" + 'Num_0'
-  // controlDevice = -1 is "WSAD"   + 'Space'
+  // controlDevice = -2 is "OLK;"   + '.'
+  // controlDevice = -1 is "8546"   + '+'
 
-  if (controlDevice == -1) return QString("WSAD + Space");
-  else if (controlDevice == -2) return QString("Arrows + Num_0");
+  if (controlDevice == -1) return QString("8546 + \'+\'");
+  else if (controlDevice == -2) return QString("\"OLK;\" + \'.\'");
   else if (controlDevice == -3) return QString("YHGJ + N");
-  else if (controlDevice == -4) return QString("\"OLK;\" + \'.\'");
-  else if (controlDevice == -5) return QString("8546 + \'+\'");
+  else if (controlDevice == -4) return QString("Arrows + Num_0");
+  else if (controlDevice == -5) return QString("WSAD + Space");
   else return QString("Joystick " + QString::number(controlDevice));
 }
 
@@ -232,13 +230,13 @@ void ViewerWidget::changeControls(int player, int controlDevice)
 // called when user press "add player" button
 void ViewerWidget::addPlayer()
 {
-  // max number of players cannot be greater then number of control devices (including keyboard)
-  if (_playerNum - NUM_KEYBOARD_CONTROLS < _numJoysticks)
+  // max number of players cannot be greater then number of control devices
+  if (_playerNum < _numJoysticks + _vehicleControls.size())
   {
     int player = _playerNum;
 
     // looking for unoccupied control device (begining from keyboard)
-    for (int freeControl = -NUM_KEYBOARD_CONTROLS; freeControl < _numJoysticks; freeControl++)
+    for (int freeControl = -_vehicleControls.size(); freeControl < _numJoysticks; freeControl++)
     {
       bool pr = true;
       for (Vehicle* curVehicle : _vehicles)
@@ -376,7 +374,7 @@ void ViewerWidget::addPlayer()
     QMenu* controlsMenu = new QMenu;
 
     // adding buttons to list of control devices
-    for (int i = -NUM_KEYBOARD_CONTROLS; i < _numJoysticks; i++)
+    for (int i = -_vehicleControls.size(); i < _numJoysticks; i++)
     {
       addControlDeviceButton(controlsBtn, *controlsMenu, player, i);
     }

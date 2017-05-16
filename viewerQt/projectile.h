@@ -7,8 +7,6 @@
 #include "mapBuilder.h"
 #include "vehicle.h"
 
-class ProjectileCallback;
-
 class Projectile : public osg::MatrixTransform
 {
   using direction = Vehicle::direction;
@@ -23,13 +21,18 @@ public:
               std::vector<std::vector<osg::ref_ptr<Tile>>>& tileMap,
               std::list<osg::Node*>& toDelete, 
               ViewerWidget& ViewerWindow);
-  void TryToMove();
+
+  Projectile(const Projectile&) = delete;
+  Projectile& operator=(const Projectile&) = delete;
+
+protected:
+  virtual ~Projectile() {}
+
 private:
   std::function<void()> moving;
   std::vector<std::vector<osg::ref_ptr<Tile>>>& _tileMap;
   std::list<osg::Node*>& _toDelete;
   direction _dir;
-  osg::Matrix _mT;
   Vehicle& _parentVehicle;
   std::vector<osg::ref_ptr<Vehicle>>& _vehicles;
   osg::Vec2i _tileCollizionPt1;
@@ -38,6 +41,8 @@ private:
   int _y;
   int _z;
   int _speed; // light 4, heavy 2
-  osg::ref_ptr<ProjectileCallback> _clb;
   ViewerWidget& _ViewerWindow;
+
+  void TryToMove();
+  class ProjectileCallback;
 };
