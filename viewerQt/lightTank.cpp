@@ -36,7 +36,7 @@ LightTank::LightTank( int x,
   texture->setImage(image.get());
   state->setTextureAttributeAndModes(0, texture.get());
 
-  getRotationMt()->addChild(model.get());
+  getRotationMatrix()->addChild(model.get());
 }
 
 // shooting

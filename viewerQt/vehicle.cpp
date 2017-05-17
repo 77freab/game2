@@ -26,7 +26,7 @@ Vehicle::Vehicle( int x,
                   std::list<osg::Node*>& toDelete, 
                   ViewerWidget& ViewerWindow) : 
   _shotDelayTimer(new QDeadlineTimer(-1)), 
-  _rotationMt(new MatrixTransform),
+  _rotationMatrix(new MatrixTransform),
   _speed(speed), 
   _tileMap(tileMap), 
   _toDelete(toDelete), 
@@ -40,7 +40,7 @@ Vehicle::Vehicle( int x,
   _currentType(startType),
   _go(false)
 {
-  addChild(_rotationMt.get());
+  addChild(_rotationMatrix.get());
 }
 
 Vehicle::~Vehicle()
@@ -164,7 +164,7 @@ void Vehicle::Move()
       else _x = (_x / 8) * 8;
       // making rotation
       mR.makeRotate(0, osg::Vec3(0, -1, 0));
-      _rotationMt->setMatrix(mR);
+      _rotationMatrix->setMatrix(mR);
       break;
     }
     case(Direction::DOWN) :
@@ -172,7 +172,7 @@ void Vehicle::Move()
       if (_x % 8 >= 4) _x = (_x / 8) * 8 + 8;
       else _x = (_x / 8) * 8;
       mR.makeRotate(osg::PI, osg::Vec3(0, -1, 0));
-      _rotationMt->setMatrix(mR);
+      _rotationMatrix->setMatrix(mR);
       break;
     }
     case(Direction::LEFT) :
@@ -180,7 +180,7 @@ void Vehicle::Move()
       if (_z % 8 >= 4) _z = (_z / 8) * 8 + 8;
       else _z = (_z / 8) * 8;
       mR.makeRotate(osg::PI_2, osg::Vec3(0, -1, 0));
-      _rotationMt->setMatrix(mR);
+      _rotationMatrix->setMatrix(mR);
       break;
     }
     case(Direction::RIGHT) :
@@ -188,7 +188,7 @@ void Vehicle::Move()
       if (_z % 8 >= 4) _z = (_z / 8) * 8 + 8;
       else _z = (_z / 8) * 8;
       mR.makeRotate(-osg::PI_2, osg::Vec3(0, -1, 0));
-      _rotationMt->setMatrix(mR);
+      _rotationMatrix->setMatrix(mR);
       break;
     }
     }

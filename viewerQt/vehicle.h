@@ -71,7 +71,7 @@ protected:
 
   virtual ~Vehicle();
 
-  inline osg::MatrixTransform* getRotationMt() const;
+  inline osg::MatrixTransform* getRotationMatrix() const;
   inline QDeadlineTimer* getShotDelayTimer() const;
 
 private:
@@ -91,7 +91,7 @@ private:
   bool _enabled = false;
   int _player;
   //! additional MatrixTransform for rotating a vehicle
-  osg::ref_ptr<osg::MatrixTransform> _rotationMt;
+  osg::ref_ptr<osg::MatrixTransform> _rotationMatrix;
   Direction _goDir = Direction::UP;
   Direction _curDir = Direction::UP;
 };
@@ -192,9 +192,9 @@ inline ViewerWidget& Vehicle::GetMainWindow() const
   return _ViewerWindow;
 }
 
-inline osg::MatrixTransform* Vehicle::getRotationMt() const
+inline osg::MatrixTransform* Vehicle::getRotationMatrix() const
 {
-  return _rotationMt.get();
+  return _rotationMatrix.get();
 }
 
 inline QDeadlineTimer* Vehicle::getShotDelayTimer() const
